@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 本地未使用的大型资源（运行只需 WP + ADP checkpoints）
+douzero-baselines/models_onnx/
+douzero-baselines/checkpoints/sl/
+rlcard/
+
+# 嵌套仓库元数据（不作为本仓库内容提交）
+DouZero/.git/
+rlcard/.git/
+
+# ��ʱŲ����Ƕ�� git Ԫ����
+DouZero/.git_bak_nested/
