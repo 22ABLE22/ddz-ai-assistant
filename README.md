@@ -61,13 +61,13 @@ git clone https://github.com/kwai/DouZero.git DouZero
 
 ### 2. 下载预训练模型 → `douzero-baselines/`
 
-官方模型说明与权重见：  
-https://github.com/kwai/DouZero/tree/master/douzero/baselines
+官方预训练权重见 HuggingFace：  
+https://huggingface.co/palemoky/douzero-baselines/tree/main
 
-也可直接克隆权重仓库（体积较大）：
+克隆权重仓库（体积较大）：
 
 ```bash
-git clone https://github.com/kwai/douzero-baselines.git douzero-baselines
+git clone https://huggingface.co/palemoky/douzero-baselines douzero-baselines
 ```
 
 本程序实际只用到：
@@ -150,8 +150,8 @@ python ddz_assistant.py
 
 ## 致谢
 
-- [DouZero (KuaiShou)](https://github.com/kwai/DouZero) — 斗地主 AI 引擎与预训练模型  
-- [douzero-baselines](https://github.com/kwai/douzero-baselines) — 预训练权重  
+- [DouZero (KuaiShou)](https://github.com/kwai/DouZero) — 斗地主 AI 引擎  
+- [douzero-baselines (HuggingFace)](https://huggingface.co/palemoky/douzero-baselines) — 预训练权重  
 - 相关论文：*DouZero: Mastering DouDizhu with Self-Play Deep Reinforcement Learning*
 
 ## 免责声明
