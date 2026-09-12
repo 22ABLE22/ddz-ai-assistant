@@ -10,34 +10,103 @@
 - 支持记录地主 / 地主上家 / 地主下家的出牌；记录自己位置时与 `play` 等价（会扣手牌）
 - 地主可只输入 17 张手牌并填写底牌，程序自动合并为 20 张
 
+## 本仓库包含什么
+
+本仓库**只包含**本项目的自研代码与启动脚本：
+
+```text
+.
+├── ddz_assistant.py      # 命令行助手（核心逻辑）
+├── ddz_gui.py            # 图形界面
+├── start_gui.bat         # Windows 一键启动（请按本机 Python 路径修改）
+└── README.md
+```
+
+**不包含** DouZero 源码与模型权重，请按下面步骤自行放到对应目录。
+
+## 准备依赖目录
+
+克隆本仓库后，在**仓库根目录**下准备两个文件夹，最终结构应为：
+
+```text
+你的项目目录/                  # 即本仓库根目录
+├── ddz_assistant.py
+├── ddz_gui.py
+├── start_gui.bat
+├── README.md
+├── DouZero/                  # 从官方仓库下载的引擎源码
+│   └── douzero/
+│       ├── dmc/
+│       ├── env/
+│       └── ...
+└── douzero-baselines/
+    └── checkpoints/
+        ├── douzero_WP/       # 胜率模型（默认推荐）
+        │   ├── landlord.ckpt
+        │   ├── landlord_up.ckpt
+        │   └── landlord_down.ckpt
+        └── douzero_ADP/      # 分差模型
+            ├── landlord.ckpt
+            ├── landlord_up.ckpt
+            └── landlord_down.ckpt
+```
+
+### 1. 下载 DouZero 源码 → `DouZero/`
+
+```bash
+git clone https://github.com/kwai/DouZero.git DouZero
+```
+
+或从 GitHub 下载 ZIP 后解压，把官方仓库内容放到 `DouZero/` 目录（保证存在 `DouZero/douzero/env`、`DouZero/douzero/dmc`）。
+
+### 2. 下载预训练模型 → `douzero-baselines/`
+
+官方模型说明与权重见：  
+https://github.com/kwai/DouZero/tree/master/douzero/baselines
+
+也可直接克隆权重仓库（体积较大）：
+
+```bash
+git clone https://github.com/kwai/douzero-baselines.git douzero-baselines
+```
+
+本程序实际只用到：
+
+- `douzero-baselines/checkpoints/douzero_WP/`
+- `douzero-baselines/checkpoints/douzero_ADP/`
+
+若只需要运行助手，可只保留上述两个目录下的 6 个 `.ckpt` 文件。
+
 ## 环境要求
 
 - Windows（已提供 `start_gui.bat`）
-- Python 3.9+（建议使用 conda 环境）
-- PyTorch（CPU 即可）
+- Python 3.9+（建议 conda）
+- 依赖：
 
-主要依赖：
-
-```text
-torch
-numpy
+```bash
+pip install torch numpy
 ```
+
+CPU 版 PyTorch 即可。
 
 ## 快速开始
 
+确认目录结构如上后：
+
 ### 方式一：双击启动
 
-双击 `start_gui.bat`（脚本默认使用本机 `D:\ProgramData\miniconda3\envs\PEMAE\python.exe`，若路径不同请按需修改）。
+双击 `start_gui.bat`。  
+脚本默认使用本机路径 `D:\ProgramData\miniconda3\envs\PEMAE\python.exe`，若环境不同请用记事本打开该文件修改。
 
 ### 方式二：命令行
 
 ```bash
-conda activate PEMAE   # 或你自己的环境
-cd path/to/DDZ
+conda activate 你的环境名
+cd 路径/到/本项目
 python ddz_gui.py
 ```
 
-### 仅使用命令行助手
+### 仅命令行助手
 
 ```bash
 python ddz_assistant.py
@@ -55,21 +124,7 @@ python ddz_assistant.py
 | `reset` | 新对局 |
 | `quit` | 退出 |
 
-## 目录结构
-
-```text
-.
-├── ddz_assistant.py      # 命令行助手（核心逻辑）
-├── ddz_gui.py            # 图形界面
-├── start_gui.bat         # Windows 一键启动
-├── DouZero/              # DouZero 引擎源码（环境、模型结构）
-└── douzero-baselines/
-    └── checkpoints/
-        ├── douzero_WP/   # 胜率模型（默认）
-        └── douzero_ADP/  # 分差模型
-```
-
-## 使用提示（GUI）
+## GUI 使用提示
 
 1. 选择身份：地主上家 / 地主 / 地主下家  
 2. 输入手牌（地主建议含底牌共 20 张，或 17 张 + 底牌）与三张底牌  
@@ -85,11 +140,18 @@ python ddz_assistant.py
 | **WP** | Win Percentage | 更关注胜率（默认） |
 | **ADP** | Average Difference of Points | 更关注平均分差 |
 
-预训练权重来自官方 [douzero-baselines](https://github.com/kwai/DouZero/tree/master/douzero/baselines)。
+## 常见问题
+
+**启动报找不到模型 / DouZero**  
+检查是否按上文把 `DouZero/`、`douzero-baselines/checkpoints/douzero_WP|ADP/` 放在与 `ddz_gui.py` 同一级目录。
+
+**`start_gui.bat` 双击闪退**  
+用编辑器打开 bat，把 Python 路径改成你的环境里 `python.exe` 的完整路径。
 
 ## 致谢
 
 - [DouZero (KuaiShou)](https://github.com/kwai/DouZero) — 斗地主 AI 引擎与预训练模型  
+- [douzero-baselines](https://github.com/kwai/douzero-baselines) — 预训练权重  
 - 相关论文：*DouZero: Mastering DouDizhu with Self-Play Deep Reinforcement Learning*
 
 ## 免责声明

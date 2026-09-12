@@ -11,14 +11,7 @@ venv/
 .DS_Store
 Thumbs.db
 
-# 本地未使用的大型资源（运行只需 WP + ADP checkpoints）
-douzero-baselines/models_onnx/
-douzero-baselines/checkpoints/sl/
+# 第三方引擎与预训练权重：请按 README 自行下载，不纳入本仓库
+DouZero/
+douzero-baselines/
 rlcard/
-
-# 嵌套仓库元数据（不作为本仓库内容提交）
-DouZero/.git/
-rlcard/.git/
-
-# ��ʱŲ����Ƕ�� git Ԫ����
-DouZero/.git_bak_nested/
