@@ -35,6 +35,14 @@ class DDZAssistant:
         self.model_type = 'WP'
         self.my_position = None
 
+        # 仿真搜索
+        self.search_enabled = False
+        self.search_sims = 40
+        self.search_top_k = 6
+        self.search_objective = 'FUSE'  # WP | ADP | FUSE
+        self.search_wp_weight = 0.7     # FUSE 时 WP 权重
+        self.search_workers = 0         # 0=单进程; >1 多进程
+
         # 游戏状态
         self.my_hand_cards = []  # 我的手牌
         self.three_cards = []  # 三张底牌
@@ -85,6 +93,34 @@ class DDZAssistant:
         self.model_type = key
         desc = '胜率优先' if key == 'WP' else '平均分差'
         print(f"推荐模型已切换: {key} ({desc})")
+        return True
+
+    def set_search(self, enabled=None, sims=None, top_k=None,
+                   wp_weight=None, workers=None, objective=None):
+        """配置仿真搜索。"""
+        if enabled is not None:
+            self.search_enabled = bool(enabled)
+        if sims is not None:
+            self.search_sims = max(4, int(sims))
+        if top_k is not None:
+            self.search_top_k = max(2, int(top_k))
+        if wp_weight is not None:
+            self.search_wp_weight = max(0.0, min(1.0, float(wp_weight)))
+        if workers is not None:
+            self.search_workers = max(0, int(workers))
+        if objective is not None:
+            obj = objective.strip().upper()
+            if obj not in ('WP', 'ADP', 'FUSE', 'MIX'):
+                print("错误: objective 只能是 WP / ADP / FUSE")
+                return False
+            if obj == 'MIX':
+                obj = 'FUSE'
+            self.search_objective = obj
+        state = '开启' if self.search_enabled else '关闭'
+        wtxt = f"WP权重={self.search_wp_weight:.2f}"
+        ptxt = f"workers={self.search_workers}" if self.search_workers > 1 else "单进程"
+        print(f"仿真搜索: {state} | n={self.search_sims} k={self.search_top_k} "
+              f"目标={self.search_objective} {wtxt} {ptxt}")
         return True
 
     def _format_score(self, value):
@@ -433,6 +469,52 @@ class DDZAssistant:
             print(f"\n推荐出牌: {action_display}  [{self.model_type}]")
             return action
 
+        # 仿真搜索模式
+        if self.search_enabled:
+            try:
+                from ddz_search import search_best_move
+            except Exception as e:
+                print(f"搜索模块不可用，回退单步模型: {e}")
+            else:
+                print(f"\n启动仿真搜索（{self.model_type} 策略，目标 {self.search_objective}，"
+                      f"{self.search_sims} 次，候选上限 {self.search_top_k}）...")
+                best_action, report = search_best_move(
+                    self.models[self.model_type],
+                    self,
+                    infoset,
+                    num_simulations=self.search_sims,
+                    top_k=self.search_top_k,
+                    objective=self.search_objective,
+                    wp_weight=self.search_wp_weight,
+                    models_adp=self.models['ADP'],
+                    ckpt_root=self.ckpt_root,
+                    num_workers=self.search_workers,
+                    verbose=True,
+                )
+                action_display = '不出' if not best_action else self.cards_to_display(best_action)
+                wr = report.get('win_rate')
+                au = report.get('avg_util')
+                fused = report.get('fused')
+                meta = []
+                if wr is not None:
+                    meta.append(f"胜率={wr*100:.1f}%")
+                if au is not None:
+                    meta.append(f"分差={au:+.3f}")
+                if fused is not None:
+                    meta.append(f"融合分={fused:.3f}")
+                meta_s = (' | ' + ' '.join(meta)) if meta else ''
+                print(f"\n推荐出牌: {action_display}  [搜索 {self.search_objective}{meta_s}]")
+
+                cands = report.get('candidates') or []
+                if len(cands) > 1:
+                    print("\n搜索候选:")
+                    for i, row in enumerate(cands[:6], 1):
+                        mark = ' ←' if i == 1 else ''
+                        print(f"  {i}. {row['display']}  "
+                              f"(胜率={row['win_rate']*100:.1f}%, 分差={row['avg_util']:+.3f}, "
+                              f"融合={row.get('fused', 0):.3f}, n={row['n']}){mark}")
+                return best_action
+
         # 使用模型推理
         obs = get_obs(infoset)
 
@@ -610,6 +692,7 @@ def main():
     print("  recommend - 获取AI推荐出牌")
     print("  play <牌> - 执行我的出牌")
     print("  model [WP|ADP] - 查看/切换推荐模型 (WP胜率, ADP分差)")
+    print("  search [on|off] [n=次数] [k=候选数] - 仿真搜索开关与参数")
     print("  status - 显示当前状态")
     print("  reset - 开始新对局")
     print("  help - 显示帮助")
@@ -643,6 +726,7 @@ def main():
                 print("  recommend - 获取AI推荐出牌")
                 print("  play <牌> - 执行我的出牌")
                 print("  model [WP|ADP] - 查看/切换推荐模型")
+                print("  search [on|off] [n=次数] [k=候选] [w=WP权重] [workers=N] [obj=FUSE|WP|ADP]")
                 print("  status - 显示当前状态")
                 print("  reset - 开始新对局")
                 print("  quit - 退出程序")
@@ -701,11 +785,56 @@ def main():
                 parts = cmd.split()
                 assistant.set_model_type(parts[1])
 
+            elif cmd.lower() == 'search' or cmd.lower().startswith('search '):
+                tokens = cmd.lower().split()
+                if len(tokens) == 1:
+                    state = '开启' if assistant.search_enabled else '关闭'
+                    wtxt = f"WP权重={assistant.search_wp_weight:.2f}"
+                    ptxt = f"workers={assistant.search_workers}" if assistant.search_workers > 1 else "单进程"
+                    print(f"仿真搜索: {state} | n={assistant.search_sims} k={assistant.search_top_k} "
+                          f"目标={assistant.search_objective} {wtxt} {ptxt}")
+                    print("用法: search on|off [n=40] [k=6] [w=0.7] [workers=0] [obj=FUSE|WP|ADP]")
+                    continue
+                enabled = None
+                sims = None
+                top_k = None
+                wp_weight = None
+                workers = None
+                objective = None
+                for tok in tokens[1:]:
+                    if tok in ('on', '1', 'true', 'yes'):
+                        enabled = True
+                    elif tok in ('off', '0', 'false', 'no'):
+                        enabled = False
+                    elif tok.startswith('n='):
+                        sims = int(tok[2:])
+                    elif tok.startswith('k='):
+                        top_k = int(tok[2:])
+                    elif tok.startswith('w='):
+                        wp_weight = float(tok[2:])
+                    elif tok.startswith('workers=') or tok.startswith('p='):
+                        workers = int(tok.split('=', 1)[1])
+                    elif tok.startswith('obj='):
+                        objective = tok.split('=', 1)[1]
+                    else:
+                        print(f"无法识别参数: {tok}")
+                try:
+                    assistant.set_search(
+                        enabled=enabled, sims=sims, top_k=top_k,
+                        wp_weight=wp_weight, workers=workers, objective=objective,
+                    )
+                except Exception as e:
+                    print(f"错误: {e}")
+
             elif cmd == 'status':
                 print(f"\n我的位置: {assistant._get_position_name(assistant.my_position)}")
                 print(f"我的手牌: {assistant.cards_to_display(assistant.my_hand_cards)} ({len(assistant.my_hand_cards)}张)")
                 print(f"当前出牌方: {assistant._get_position_name(assistant.acting_player_position)}")
                 print(f"推荐模型: {assistant.model_type}")
+                sstate = '开' if assistant.search_enabled else '关'
+                ptxt = f"w={assistant.search_workers}" if assistant.search_workers > 1 else "单进程"
+                print(f"仿真搜索: {sstate} (n={assistant.search_sims}, k={assistant.search_top_k}, "
+                      f"obj={assistant.search_objective}, WP权重={assistant.search_wp_weight:.2f}, {ptxt})")
                 print(f"已出炸弹数: {assistant.bomb_num}")
                 print(f"底牌: {assistant.cards_to_display(assistant.three_cards)}")
                 print(f"\n各位置剩余手牌:")

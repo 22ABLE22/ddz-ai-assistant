@@ -292,6 +292,54 @@ class DDZGui:
                 command=self._on_model_change,
             ).pack(side=tk.LEFT, padx=6)
 
+        # 仿真搜索
+        search_row = tk.Frame(rec, bg=C["panel"])
+        search_row.pack(fill=tk.X, padx=12, pady=(0, 2))
+        self.search_on = tk.BooleanVar(value=False)
+        tk.Checkbutton(
+            search_row, text="深度搜索", variable=self.search_on,
+            bg=C["panel"], fg=C["gold"], selectcolor=C["surface"],
+            activebackground=C["panel"], activeforeground=C["gold"],
+            font=("Microsoft YaHei UI", 9),
+            command=self._on_search_toggle,
+        ).pack(side=tk.LEFT)
+        tk.Label(search_row, text="仿真", bg=C["panel"], fg=C["muted"],
+                 font=("Microsoft YaHei UI", 9)).pack(side=tk.LEFT, padx=(10, 2))
+        self.search_sims_var = tk.StringVar(value="40")
+        sims_spin = tk.Spinbox(
+            search_row, from_=8, to=300, increment=4, width=5,
+            textvariable=self.search_sims_var,
+            bg=C["panel2"], fg=C["ink"], buttonbackground=C["surface"],
+            font=("Consolas", 9))
+        sims_spin.pack(side=tk.LEFT)
+        sims_spin.bind("<FocusOut>", lambda e: self._on_search_toggle())
+        sims_spin.bind("<Return>", lambda e: self._on_search_toggle())
+
+        search_row2 = tk.Frame(rec, bg=C["panel"])
+        search_row2.pack(fill=tk.X, padx=12, pady=(0, 4))
+        tk.Label(search_row2, text="WP权重", bg=C["panel"], fg=C["muted"],
+                 font=("Microsoft YaHei UI", 9)).pack(side=tk.LEFT)
+        self.search_wp_w = tk.StringVar(value="0.70")
+        w_spin = tk.Spinbox(
+            search_row2, from_=0.0, to=1.0, increment=0.05, width=5,
+            textvariable=self.search_wp_w,
+            bg=C["panel2"], fg=C["ink"], buttonbackground=C["surface"],
+            font=("Consolas", 9))
+        w_spin.pack(side=tk.LEFT, padx=(4, 10))
+        w_spin.bind("<FocusOut>", lambda e: self._on_search_toggle())
+        w_spin.bind("<Return>", lambda e: self._on_search_toggle())
+        tk.Label(search_row2, text="并行", bg=C["panel"], fg=C["muted"],
+                 font=("Microsoft YaHei UI", 9)).pack(side=tk.LEFT)
+        self.search_workers_var = tk.StringVar(value="0")
+        wkr_spin = tk.Spinbox(
+            search_row2, from_=0, to=16, increment=1, width=4,
+            textvariable=self.search_workers_var,
+            bg=C["panel2"], fg=C["ink"], buttonbackground=C["surface"],
+            font=("Consolas", 9))
+        wkr_spin.pack(side=tk.LEFT, padx=4)
+        wkr_spin.bind("<FocusOut>", lambda e: self._on_search_toggle())
+        wkr_spin.bind("<Return>", lambda e: self._on_search_toggle())
+
         self.rec_cards = HandStrip(rec)
         self.rec_cards.pack(anchor="w", padx=10, pady=4)
 
@@ -416,7 +464,35 @@ class DDZGui:
         mtype = self.model_type.get()
         self.send_cmd(f"model {mtype}")
         tip = "WP：更关注胜率" if mtype == "WP" else "ADP：更关注分差"
+        if self.search_on.get():
+            tip += " · 深度搜索中"
         self.footer.config(text=f"推荐模型已切换为 {mtype} · {tip}")
+
+    def _on_search_toggle(self):
+        on = bool(self.search_on.get())
+        try:
+            n = max(8, int(self.search_sims_var.get()))
+        except Exception:
+            n = 40
+            self.search_sims_var.set("40")
+        try:
+            w = max(0.0, min(1.0, float(self.search_wp_w.get())))
+        except Exception:
+            w = 0.70
+            self.search_wp_w.set("0.70")
+        try:
+            workers = max(0, int(self.search_workers_var.get()))
+        except Exception:
+            workers = 0
+            self.search_workers_var.set("0")
+        cmd = f"search {'on' if on else 'off'} n={n} w={w:.2f} workers={workers} obj=FUSE"
+        self.send_cmd(cmd)
+        if on:
+            extra = f" · 并行 x{workers}" if workers > 1 else ""
+            self.footer.config(
+                text=f"深度搜索开启 · 仿真 {n} 次 · WP权重 {w:.2f}{extra}")
+        else:
+            self.footer.config(text="深度搜索已关闭 · 单步模型推荐")
 
     def _sync_hand_strip(self, _event=None):
         self.hand_strip.set_cards(parse_hand_display(self.hand_entry.get()))
@@ -507,6 +583,7 @@ class DDZGui:
             self._started = True
         # 确保后端模型与界面一致
         self.send_cmd(f"model {self.model_type.get()}")
+        self._on_search_toggle()
         self._set_status("对局中", C["green"])
         self.rec_text.config(text="等待推荐…")
         self.cand_list.delete(0, tk.END)
