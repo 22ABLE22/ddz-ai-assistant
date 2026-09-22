@@ -69,6 +69,16 @@ def parse_hand_display(s: str):
     return sorted(cards, key=key)
 
 
+def only_valid_cards(s: str) -> bool:
+    """是否只含合法牌面字符（允许空格/逗号分隔）。"""
+    if not s:
+        return True
+    t = s.replace(" ", "").replace(",", "").replace("，", "").upper()
+    t = re.sub(r"10", "", t)
+    t = re.sub(r"[2-9JQKAXD1]", "", t)
+    return t == ""
+
+
 class CardChip(tk.Canvas):
     """单张牌的小卡片控件。"""
 
@@ -664,12 +674,22 @@ class DDZGui:
         if not hand:
             messagebox.showwarning("提示", "请先输入手牌")
             return
+        if not only_valid_cards(hand):
+            messagebox.showwarning(
+                "手牌含非法字符",
+                "手牌只能是 3-9、10、J、Q、K、A、2、X（小王）、D（大王）。")
+            return
         hand_n = len(parse_hand_display(hand))
         if hand_n != 17:
             messagebox.showwarning(
                 "手牌张数不对",
                 f"手牌必须是 17 张（当前 {hand_n} 张）。\n"
                 f"请只填起始手牌；若你是地主，3 张底牌会自动并入，不要写进手牌。")
+            return
+        if three and not only_valid_cards(three):
+            messagebox.showwarning(
+                "底牌含非法字符",
+                "底牌只能是牌面（如 3 4 5）或留空/无/pass。")
             return
         three_n = len(parse_hand_display(three)) if three else 0
         # 有内容却解析不出牌 → 非法输入，不能发给后端
