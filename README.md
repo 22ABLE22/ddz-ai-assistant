@@ -126,7 +126,7 @@ python ddz_assistant.py
 | `recommend` | 获取 AI 推荐 |
 | `play <牌>` | 执行我的出牌（`play pass` 表示不出） |
 | `model WP` / `model ADP` | 切换策略模型 |
-| `search on n=48 k=6 w=0.7 workers=4 obj=FUSE` | 开启深度搜索并配置参数 |
+| `search on n=200 k=6 w=0.7 workers=8 obj=FUSE` | 开启深度搜索并配置参数 |
 | `search off` | 关闭深度搜索 |
 | `status` | 查看状态 |
 | `reset` | 新对局 |

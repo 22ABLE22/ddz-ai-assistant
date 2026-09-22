@@ -729,7 +729,7 @@ def main():
     print("  recommend - 获取AI推荐出牌")
     print("  play <牌> - 执行我的出牌")
     print("  model [WP|ADP] - 查看/切换推荐模型 (WP胜率, ADP分差)")
-    print("  search [on|off] [n=次数] [k=候选数] - 仿真搜索开关与参数")
+    print("  search [on|off] [n=次数] [k=候选] [w=WP权重] [workers=N] [obj=FUSE|WP|ADP] - 仿真搜索")
     print("  status - 显示当前状态")
     print("  reset - 开始新对局")
     print("  help - 显示帮助")
@@ -763,7 +763,7 @@ def main():
                 print("  recommend - 获取AI推荐出牌")
                 print("  play <牌> - 执行我的出牌")
                 print("  model [WP|ADP] - 查看/切换推荐模型")
-                print("  search [on|off] [n=次数] [k=候选] [w=WP权重] [workers=N] [obj=FUSE|WP|ADP]")
+                print("  search [on|off] [n=200] [k=6] [w=0.7] [workers=8] [obj=FUSE|WP|ADP]")
                 print("  status - 显示当前状态")
                 print("  reset - 开始新对局")
                 print("  quit - 退出程序")
@@ -830,7 +830,7 @@ def main():
                     ptxt = f"workers={assistant.search_workers}" if assistant.search_workers > 1 else "单进程"
                     print(f"仿真搜索: {state} | n={assistant.search_sims} k={assistant.search_top_k} "
                           f"目标={assistant.search_objective} {wtxt} {ptxt}")
-                    print("用法: search on|off [n=40] [k=6] [w=0.7] [workers=0] [obj=FUSE|WP|ADP]")
+                    print("用法: search on|off [n=200] [k=6] [w=0.7] [workers=8] [obj=FUSE|WP|ADP]")
                     continue
                 enabled = None
                 sims = None
