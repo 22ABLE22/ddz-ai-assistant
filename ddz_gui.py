@@ -201,6 +201,8 @@ class DDZGui:
         self.model_type = tk.StringVar(value="WP")  # WP胜率 / ADP分差
         self._last_recommend = ""
         self._started = False
+        self._cmd_ready = False      # 后端是否已进入命令循环
+        self._pending_cmds = []      # 暂存 search/model，避免打乱 setup 输入
 
         self._setup_style()
         self.create_widgets()
@@ -512,10 +514,14 @@ class DDZGui:
 
     def _on_model_change(self):
         mtype = self.model_type.get()
-        self.send_cmd(f"model {mtype}")
         tip = "WP：更关注胜率" if mtype == "WP" else "ADP：更关注分差"
         if self.search_on.get():
             tip += " · 深度搜索中"
+        cmd = f"model {mtype}"
+        if not getattr(self, "_cmd_ready", False):
+            self._pending_cmds.append(cmd)
+        else:
+            self.send_cmd(cmd)
         self.footer.config(text=f"推荐模型已切换为 {mtype} · {tip}")
 
     def _on_search_toggle(self):
@@ -536,6 +542,16 @@ class DDZGui:
             workers = 8
             self.search_workers_var.set("8")
         cmd = f"search {'on' if on else 'off'} n={n} w={w:.2f} workers={workers} obj=FUSE"
+        # setup_game 的 input() 尚未走完时不能下发，否则会被当成身份/手牌
+        if not getattr(self, "_cmd_ready", False):
+            self._pending_cmds.append(cmd)
+            if on:
+                extra = f" · 并行 x{workers}" if workers > 1 else ""
+                self.footer.config(
+                    text=f"深度搜索开启 · 仿真 {n} 次 · WP权重 {w:.2f}{extra}")
+            else:
+                self.footer.config(text="深度搜索已关闭 · 单步模型推荐")
+            return
         self.send_cmd(cmd)
         if on:
             extra = f" · 并行 x{workers}" if workers > 1 else ""
@@ -543,6 +559,12 @@ class DDZGui:
                 text=f"深度搜索开启 · 仿真 {n} 次 · WP权重 {w:.2f}{extra}")
         else:
             self.footer.config(text="深度搜索已关闭 · 单步模型推荐")
+
+    def _flush_pending_cmds(self):
+        pending = list(getattr(self, "_pending_cmds", []))
+        self._pending_cmds = []
+        for cmd in pending:
+            self.send_cmd(cmd)
 
     def _sync_hand_strip(self, _event=None):
         self.hand_strip.set_cards(parse_hand_display(self.hand_entry.get()))
@@ -631,7 +653,7 @@ class DDZGui:
         else:
             self.send_lines(lines)
             self._started = True
-        # 确保后端模型与界面一致
+        # 确保后端模型与界面一致（setup 行之后入队，待命令循环处理）
         self.send_cmd(f"model {self.model_type.get()}")
         self._on_search_toggle()
         self._set_status("对局中", C["green"])
@@ -744,8 +766,10 @@ class DDZGui:
             tag = "orange"
             if "模型加载完成" in text:
                 self._set_status("就绪", C["green"])
-                # 默认深度搜索参数同步到后端
-                self._on_search_toggle()
+            # 后端已进入命令循环后，才允许下发 search/model
+            if "游戏开始" in text:
+                self._cmd_ready = True
+                self._flush_pending_cmds()
         elif "推荐出牌" in text:
             tag = "gold"
         elif "记牌器" in text:

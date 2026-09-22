@@ -38,6 +38,48 @@ POSITIONS = ("landlord", "landlord_up", "landlord_down")
 
 # 进程池 worker 全局状态（spawn 下每个子进程一份）
 _WORKER: dict = {}
+# 跨次推荐复用的进程池（避免每次都重建 8 个 worker / 重复加载模型）
+_POOL_CACHE: dict = {}
+
+
+def _get_or_create_pool(ckpt_root: str, model_type: str, douzero_path: str, n_workers: int):
+    import multiprocessing as mp
+
+    try:
+        mp.freeze_support()
+    except Exception:
+        pass
+
+    key = (os.path.abspath(ckpt_root), model_type, int(n_workers))
+    pool = _POOL_CACHE.get(key)
+    if pool is not None:
+        return pool, True
+
+    # 配置变化时清理旧池，避免白占内存
+    for old_key in list(_POOL_CACHE.keys()):
+        if old_key[0] == key[0] and (old_key[1] != key[1] or old_key[2] != key[2]):
+            try:
+                _POOL_CACHE.pop(old_key).terminate()
+            except Exception:
+                pass
+
+    ctx = mp.get_context("spawn")
+    pool = ctx.Pool(
+        processes=int(n_workers),
+        initializer=_init_worker,
+        initargs=(ckpt_root, model_type, douzero_path),
+    )
+    _POOL_CACHE[key] = pool
+    return pool, False
+
+
+def shutdown_pools():
+    for pool in list(_POOL_CACHE.values()):
+        try:
+            pool.terminate()
+        except Exception:
+            pass
+    _POOL_CACHE.clear()
 
 
 class ModelAgent:
@@ -384,41 +426,34 @@ def search_best_move(
               f"目标 {obj_label} (WP权重={w:.2f})，{mode}")
 
     if num_workers and num_workers > 1 and ckpt_root:
-        # 多进程：按仿真次数切批
-        import multiprocessing as mp
-
-        try:
-            mp.freeze_support()
-        except Exception:
-            pass
+        # 多进程：复用进程池，按仿真次数切批
+        import atexit
 
         rollout_type = assistant.model_type
         douzero_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "DouZero")
-        ctx = mp.get_context("spawn")
         n_workers = max(1, min(int(num_workers), int(num_simulations)))
         try:
-            with ctx.Pool(
-                processes=n_workers,
-                initializer=_init_worker,
-                initargs=(ckpt_root, rollout_type, douzero_path),
-            ) as pool:
-                payloads = [
-                    (state, candidates, (seed if seed is not None else 0) + i * 9973)
-                    for i in range(num_simulations)
-                ]
-                done = 0
-                for batch_result in pool.imap_unordered(_run_sim_batch, payloads):
-                    for a, res in zip(candidates, batch_result or []):
-                        key = tuple(a)
-                        stats[key]["wins"] += int(res["win"])
-                        stats[key]["utils"].append(res["util"])
-                    done += 1
-                    if verbose and done % max(1, num_simulations // 4) == 0:
-                        print(f"[搜索] 进度 {done}/{num_simulations}")
+            pool, reused = _get_or_create_pool(ckpt_root, rollout_type, douzero_path, n_workers)
+            atexit.register(shutdown_pools)
+            if verbose and reused:
+                print("[搜索] 复用已有进程池")
+            payloads = [
+                (state, candidates, (seed if seed is not None else 0) + i * 9973)
+                for i in range(num_simulations)
+            ]
+            done = 0
+            for batch_result in pool.imap_unordered(_run_sim_batch, payloads):
+                for a, res in zip(candidates, batch_result or []):
+                    key = tuple(a)
+                    stats[key]["wins"] += int(res["win"])
+                    stats[key]["utils"].append(res["util"])
+                done += 1
+                if verbose and done % max(1, num_simulations // 4) == 0:
+                    print(f"[搜索] 进度 {done}/{num_simulations}")
         except Exception as e:
             if verbose:
                 print(f"[搜索] 多进程失败，回退单进程: {e}")
-            # 清空可能半途写入的统计，避免重复计数
+            shutdown_pools()
             stats = {k: {"wins": 0, "utils": [], "action": a}
                      for k, a in zip(keys, candidates)}
             num_workers = 0
