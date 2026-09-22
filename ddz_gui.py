@@ -74,9 +74,9 @@ def only_valid_cards(s: str) -> bool:
     if not s:
         return True
     t = s.upper()
-    # 先按完整 token 认牌（10 必须相邻），再看是否只剩分隔符
+    # 先按完整 token 认牌（10 必须相邻），再看是否只剩半角空格/逗号
     rest = re.sub(r"10|[2-9JQKAXD]", " ", t)
-    rest = re.sub(r"[\s,]", "", rest)
+    rest = rest.replace(" ", "").replace(",", "")
     return rest == ""
 
 
