@@ -42,6 +42,10 @@ ROLE_NAME = {
     "landlord_down": "地主下家",
 }
 RANK_ORDER = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "X", "D"]
+# 每种牌总张数（记牌器）
+RANK_MAX = {r: 4 for r in RANK_ORDER}
+RANK_MAX["X"] = 1
+RANK_MAX["D"] = 1
 
 
 def parse_hand_display(s: str):
@@ -84,7 +88,6 @@ class CardChip(tk.Canvas):
         # 牌面
         self.create_rectangle(1, 1, w - 3, h - 3, fill=C["card_bg"],
                               outline=C["gold_dim"], width=1)
-        # 顶部小角
         ink = C["card_ink"]
         if self.rank in ("2", "D"):
             ink = "#C0392B"
@@ -94,12 +97,9 @@ class CardChip(tk.Canvas):
             ink = "#1F4E3A"
 
         label = self.rank
-        font_size = 16 if len(label) == 1 else 12
+        font_size = 18 if len(label) == 1 else 14
         self.create_text(w // 2 - 1, h // 2 - 1, text=label,
                          fill=ink, font=("Segoe UI", font_size, "bold"))
-        # 左上角
-        self.create_text(7, 8, text=label if len(label) == 1 else label[:1],
-                         fill=ink, font=("Segoe UI", 8, "bold"), anchor="nw")
 
 
 class HandStrip(tk.Frame):
@@ -117,6 +117,51 @@ class HandStrip(tk.Frame):
             chip = CardChip(self, c)
             chip.pack(side=tk.LEFT, padx=2, pady=2)
             self._chips.append(chip)
+
+
+class CardCounter(tk.Frame):
+    """记牌器：显示尚未出现的牌张。"""
+
+    def __init__(self, master, **kw):
+        super().__init__(master, bg=C["panel"], **kw)
+        self._tiles = {}  # rank -> label widget
+        self._build()
+        self.update_counts({r: RANK_MAX[r] for r in RANK_ORDER})
+
+    def _build(self):
+        for rank in RANK_ORDER:
+            tile = tk.Frame(self, bg=C["panel2"], highlightthickness=2,
+                            highlightbackground=C["panel2"])
+            tile.pack(side=tk.LEFT, padx=2, pady=2)
+            top = tk.Label(tile, text=rank, bg=C["panel2"], fg=C["ink"],
+                           font=("Segoe UI", 9, "bold"), width=3)
+            top.pack(padx=4, pady=(3, 0))
+            num = tk.Label(tile, text=str(RANK_MAX[rank]), bg=C["panel2"],
+                           fg=C["ink"], font=("Consolas", 11, "bold"), width=3)
+            num.pack(padx=4, pady=(0, 3))
+            self._tiles[rank] = (tile, top, num)
+
+    def update_counts(self, unseen: dict):
+        """unseen: rank -> 剩余未出现张数。"""
+        # 王炸提示：小王大王都还没出现
+        jokers_hot = (unseen.get("X", 0) >= 1 and unseen.get("D", 0) >= 1)
+        for rank, (tile, top, num) in self._tiles.items():
+            left = int(unseen.get(rank, 0))
+            num.config(text=str(left))
+            if left <= 0:
+                # 灰显
+                tile.config(bg="#1A2420", highlightbackground="#2A3530")
+                top.config(bg="#1A2420", fg=C["muted"])
+                num.config(bg="#1A2420", fg=C["muted"])
+            elif left >= RANK_MAX[rank] or (rank in ("X", "D") and jokers_hot):
+                # 红框：仍可能成炸（满张）或王炸双王未见
+                tile.config(bg=C["panel2"], highlightbackground=C["red"])
+                top.config(bg=C["panel2"], fg=C["ink"])
+                num.config(bg=C["panel2"], fg=C["red"])
+            else:
+                tile.config(bg=C["panel2"], highlightbackground=C["border"])
+                top.config(bg=C["panel2"], fg=C["ink"])
+                num.config(bg=C["panel2"], fg=C["gold"])
 
 
 class ModernButton(tk.Button):
@@ -259,8 +304,13 @@ class DDZGui:
         tk.Label(hand_frame, text="当前手牌", bg=C["panel"], fg=C["muted"],
                  font=("Microsoft YaHei UI", 9)).pack(anchor="w", padx=12, pady=(8, 0))
         self.hand_strip = HandStrip(hand_frame)
-        self.hand_strip.pack(fill=tk.X, padx=8, pady=(4, 10))
+        self.hand_strip.pack(fill=tk.X, padx=8, pady=(4, 6))
         self.hand_strip.set_cards(parse_hand_display(self.hand_entry.get()))
+
+        tk.Label(hand_frame, text="记牌器（未出现，红框=可能成炸）", bg=C["panel"], fg=C["muted"],
+                 font=("Microsoft YaHei UI", 9)).pack(anchor="w", padx=12, pady=(2, 0))
+        self.card_counter = CardCounter(hand_frame)
+        self.card_counter.pack(fill=tk.X, padx=8, pady=(4, 10))
 
         self.hand_entry.bind("<KeyRelease>", self._sync_hand_strip)
 
@@ -643,6 +693,19 @@ class DDZGui:
 
         self.root.after(80, self.read_output)
 
+    def _parse_counter_line(self, text):
+        """解析 '记牌器: 3:2 4:0 ...' 并刷新记牌器。"""
+        body = re.split(r"[:：]", text, maxsplit=1)[-1]
+        counts = {r: RANK_MAX[r] for r in RANK_ORDER}
+        for tok in body.replace("，", " ").replace(",", " ").split():
+            parts = re.split(r"[:：]", tok)
+            if len(parts) == 2 and parts[0] in counts:
+                try:
+                    counts[parts[0]] = max(0, int(parts[1]))
+                except ValueError:
+                    pass
+        self.card_counter.update_counts(counts)
+
     def _handle_output_line(self, text):
         tag = None
         if "推荐出牌:" in text or "推荐出牌：" in text:
@@ -683,6 +746,9 @@ class DDZGui:
                 self._set_status("就绪", C["green"])
         elif "推荐出牌" in text:
             tag = "gold"
+        elif "记牌器" in text:
+            tag = "muted"
+            self._parse_counter_line(text)
         elif text.startswith(">"):
             tag = "muted"
 

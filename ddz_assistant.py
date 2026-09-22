@@ -58,6 +58,9 @@ class DDZAssistant:
         # 各位置剩余手牌数
         self.num_cards_left = {'landlord': 20, 'landlord_up': 17, 'landlord_down': 17}
 
+        # 记牌器：已出现（见过）的牌
+        self.seen_cards = Counter()
+
         # 加载 WP / ADP 两套模型
         print("正在加载AI模型 (WP + ADP)...")
         for mtype in MODEL_TYPES:
@@ -197,6 +200,14 @@ class DDZAssistant:
         # 保存状态
         self.my_hand_cards = hand_cards
         self.three_cards = three_cards
+
+        # 记牌器：初始化为「已见」自己的手牌（+农民的底牌）
+        self.seen_cards = Counter()
+        for c in hand_cards:
+            self.seen_cards[c] += 1
+        if position != 'landlord':
+            for c in three_cards:
+                self.seen_cards[c] += 1
         
         # 如果是地主，底牌已经包含在手牌中
         if position == 'landlord':
@@ -212,6 +223,27 @@ class DDZAssistant:
         
         print(f"\n游戏开始! 我的位置: {self._get_position_name(position)}")
         print("请逐次输入其他玩家的出牌,轮到我时我会推荐最佳出牌。\n")
+        print(f"记牌器(未出现): {self._unseen_display()}\n")
+
+    # ---------- 记牌器 ----------
+    def _note_seen(self, cards):
+        """记录已出现的牌（手牌/底牌/任何出牌）。"""
+        for c in cards or []:
+            self.seen_cards[c] += 1
+
+    def get_unseen_counts(self):
+        """返回 {显示牌面: 未出现张数}。"""
+        max_map = {3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4,
+                   11: 4, 12: 4, 13: 4, 14: 4, 17: 4, 20: 1, 30: 1}
+        out = {}
+        for card_id, total in max_map.items():
+            left = total - int(self.seen_cards.get(card_id, 0))
+            out[EnvCard2RealCard[card_id]] = max(0, left)
+        return out
+
+    def _unseen_display(self):
+        u = self.get_unseen_counts()
+        return ' '.join(f"{k}:{v}" for k, v in u.items() if v > 0)
     
     def _get_position_name(self, position):
         """获取位置的中文名称"""
@@ -419,6 +451,7 @@ class DDZAssistant:
         self.last_move_dict[position] = action.copy()
         self.card_play_action_seq.append(action.copy())
         self.played_cards[position].extend(action)
+        self._note_seen(action)
         
         # 更新炸弹计数
         if action in bombs:
@@ -438,6 +471,7 @@ class DDZAssistant:
         action_display = '不出' if not action else self.cards_to_display(action)
         print(f"{self._get_position_name(position)}出牌: {action_display}")
         print(f"  (剩余 {self.num_cards_left[position]} 张)")
+        print(f"记牌器: {self._unseen_display()}")
         
         # 检查游戏是否结束
         if self.num_cards_left[position] == 0:
@@ -584,6 +618,7 @@ class DDZAssistant:
         self.last_move_dict[self.my_position] = action.copy()
         self.card_play_action_seq.append(action.copy())
         self.played_cards[self.my_position].extend(action)
+        self._note_seen(action)
         
         # 更新炸弹计数
         if action in bombs:
@@ -603,6 +638,7 @@ class DDZAssistant:
         action_display = '不出' if not action else self.cards_to_display(action)
         print(f"我出牌: {action_display}")
         print(f"剩余手牌: {self.cards_to_display(self.my_hand_cards)} ({len(self.my_hand_cards)}张)")
+        print(f"记牌器: {self._unseen_display()}")
         
         # 检查游戏是否结束
         if len(self.my_hand_cards) == 0:
@@ -628,6 +664,7 @@ class DDZAssistant:
         self.game_over = False
         self.my_position = None
         self.num_cards_left = {'landlord': 20, 'landlord_up': 17, 'landlord_down': 17}
+        self.seen_cards = Counter()
         print("游戏状态已重置，可以开始新对局。\n")
 
 
@@ -835,6 +872,7 @@ def main():
                 ptxt = f"w={assistant.search_workers}" if assistant.search_workers > 1 else "单进程"
                 print(f"仿真搜索: {sstate} (n={assistant.search_sims}, k={assistant.search_top_k}, "
                       f"obj={assistant.search_objective}, WP权重={assistant.search_wp_weight:.2f}, {ptxt})")
+                print(f"记牌器(未出现): {assistant._unseen_display()}")
                 print(f"已出炸弹数: {assistant.bomb_num}")
                 print(f"底牌: {assistant.cards_to_display(assistant.three_cards)}")
                 print(f"\n各位置剩余手牌:")
