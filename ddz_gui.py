@@ -70,12 +70,13 @@ def parse_hand_display(s: str):
 
 
 def only_valid_cards(s: str) -> bool:
-    """是否只含合法牌面字符（允许空格/逗号分隔）。"""
+    """是否只含合法牌面字符。分隔仅允许半角空格/逗号；不接受全角逗号或单独的 1。"""
     if not s:
         return True
-    t = s.replace(" ", "").replace(",", "").replace("，", "").upper()
+    t = s.upper().replace(" ", "").replace(",", "")
     t = re.sub(r"10", "", t)
-    t = re.sub(r"[2-9JQKAXD1]", "", t)
+    t = re.sub(r"[2-9JQKAXD]", "", t)
+    # 剩余的 1、全角标点或其它字符一律非法
     return t == ""
 
 
