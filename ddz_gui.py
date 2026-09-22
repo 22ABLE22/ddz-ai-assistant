@@ -662,17 +662,18 @@ class DDZGui:
 
     @staticmethod
     def _normalize_card_input(s: str) -> str:
-        """把无/none/-/pass 等哨兵归一为空串，避免伪“可留空”绕过校验。"""
-        t = (s or "").strip()
+        """把无/none/-/pass 等哨兵归一为空串；只剥半角空格，避免 Tab 等边界被悄悄剥掉。"""
+        t = (s or "").strip(" ")
         if t.lower() in ("", "pass", "none", "-", "无", "wu"):
             return ""
         return t
 
     def start_new_game(self):
         role = self.my_role.get()
-        hand = self.hand_entry.get().strip()
+        # 校验前不做 strip()，防止边界 Tab/换行被剥掉后漏检
+        hand = self.hand_entry.get()
         three = self._normalize_card_input(self.three_entry.get())
-        if not hand:
+        if not hand.strip(" "):
             messagebox.showwarning("提示", "请先输入手牌")
             return
         if not only_valid_cards(hand):
