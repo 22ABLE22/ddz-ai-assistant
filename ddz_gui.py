@@ -70,14 +70,14 @@ def parse_hand_display(s: str):
 
 
 def only_valid_cards(s: str) -> bool:
-    """是否只含合法牌面字符。分隔仅允许半角空格/逗号；不接受全角逗号或单独的 1。"""
+    """是否只含合法牌面。分隔仅半角空格/逗号；10 必须连写，禁止 1 0 / 1,0 / 单独 1。"""
     if not s:
         return True
-    t = s.upper().replace(" ", "").replace(",", "")
-    t = re.sub(r"10", "", t)
-    t = re.sub(r"[2-9JQKAXD]", "", t)
-    # 剩余的 1、全角标点或其它字符一律非法
-    return t == ""
+    t = s.upper()
+    # 先按完整 token 认牌（10 必须相邻），再看是否只剩分隔符
+    rest = re.sub(r"10|[2-9JQKAXD]", " ", t)
+    rest = re.sub(r"[\s,]", "", rest)
+    return rest == ""
 
 
 class CardChip(tk.Canvas):
