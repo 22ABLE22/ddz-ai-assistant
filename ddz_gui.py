@@ -718,14 +718,19 @@ class DDZGui:
     def _parse_counter_line(self, text):
         """解析 '记牌器: 3:2 4:0 ...' 并刷新记牌器。"""
         body = re.split(r"[:：]", text, maxsplit=1)[-1]
-        counts = {r: RANK_MAX[r] for r in RANK_ORDER}
+        # 默认 0，仅用行内数值覆盖；缺失点数视为已见完，而不是满张
+        counts = {r: 0 for r in RANK_ORDER}
+        seen_any = False
         for tok in body.replace("，", " ").replace(",", " ").split():
             parts = re.split(r"[:：]", tok)
             if len(parts) == 2 and parts[0] in counts:
                 try:
-                    counts[parts[0]] = max(0, int(parts[1]))
+                    counts[parts[0]] = max(0, min(RANK_MAX[parts[0]], int(parts[1])))
+                    seen_any = True
                 except ValueError:
                     pass
+        if not seen_any:
+            return
         self.card_counter.update_counts(counts)
 
     def _handle_output_line(self, text):

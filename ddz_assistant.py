@@ -243,7 +243,8 @@ class DDZAssistant:
 
     def _unseen_display(self):
         u = self.get_unseen_counts()
-        return ' '.join(f"{k}:{v}" for k, v in u.items() if v > 0)
+        # 始终输出全部点数（含 0），避免界面把“省略”误当成满张
+        return ' '.join(f"{k}:{v}" for k, v in u.items())
     
     def _get_position_name(self, position):
         """获取位置的中文名称"""
