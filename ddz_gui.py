@@ -681,7 +681,12 @@ class DDZGui:
         cards = self.play_entry.get().strip()
         # 允许在出牌框直接敲 CLI 命令（如 reset/quit）
         low = cards.lower()
-        if low in ("reset", "quit", "exit", "status", "help", "recommend", "model", "search"):
+        if low == "reset":
+            # reset 后端会立刻 setup_game()，必须带上身份/手牌/底牌
+            self.play_entry.delete(0, tk.END)
+            self.start_new_game()
+            return
+        if low in ("quit", "exit", "status", "help", "recommend", "model", "search"):
             self.send_cmd(low)
             self.play_entry.delete(0, tk.END)
             return
