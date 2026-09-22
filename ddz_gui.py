@@ -520,10 +520,8 @@ class DDZGui:
 
     def _on_role_change(self):
         role = ROLE_MAP.get(self.my_role.get(), "")
-        if role == "landlord":
-            self.footer.config(text="地主：手牌请含3张底牌共20张；也可只填17张并填写底牌，程序会自动合并")
-        else:
-            self.footer.config(text=f"当前身份：{ROLE_NAME.get(role, role)} · 手牌通常17张")
+        self.footer.config(
+            text=f"当前身份：{ROLE_NAME.get(role, role)} · 手牌必须 17 张（地主会自动并入 3 张底牌）")
 
     def _on_model_change(self):
         mtype = self.model_type.get()
@@ -657,6 +655,22 @@ class DDZGui:
         three = self.three_entry.get().strip()
         if not hand:
             messagebox.showwarning("提示", "请先输入手牌")
+            return
+        hand_n = len(parse_hand_display(hand))
+        if hand_n != 17:
+            messagebox.showwarning(
+                "手牌张数不对",
+                f"手牌必须是 17 张（当前 {hand_n} 张）。\n"
+                f"请只填起始手牌；若你是地主，3 张底牌会自动并入，不要写进手牌。")
+            return
+        three_n = len(parse_hand_display(three)) if three else 0
+        if ROLE_MAP.get(role) == "landlord" and three_n != 3:
+            messagebox.showwarning(
+                "底牌张数不对",
+                "地主需要 3 张底牌，程序会自动并入 17 张手牌得到 20 张。")
+            return
+        if three and three_n not in (0, 3):
+            messagebox.showwarning("底牌张数不对", "底牌需为 3 张（可留空）")
             return
         lines = [role, hand, three]
         # reset 若已有对局则 CLI 会先要求 reset；首次启动时 setup_game 已在等待

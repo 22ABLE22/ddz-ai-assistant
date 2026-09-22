@@ -196,13 +196,22 @@ class DDZAssistant:
         """
         self.my_position = position
         
-        # 解析手牌
+        # 解析手牌：必须正好 17 张（发牌手牌；地主再并入底牌）
         hand_cards = self.parse_cards(hand_cards_str)
+        if len(hand_cards) != 17:
+            raise ValueError(
+                f"手牌必须是17张，当前解析到 {len(hand_cards)} 张。"
+                f"请只输入起始手牌，不要把底牌算进去。"
+            )
         three_cards = self.parse_cards(three_cards_str) if three_cards_str else []
 
-        # 地主：若手牌只有17张且给了底牌，自动合并成20张
-        if position == 'landlord' and len(hand_cards) == 17 and len(three_cards) == 3:
+        # 地主：17 张起始手牌 + 3 张底牌 → 20 张
+        if position == 'landlord':
+            if len(three_cards) != 3:
+                raise ValueError("地主需要正好 3 张底牌，以便合并成 20 张手牌")
             hand_cards = sorted(hand_cards + three_cards)
+        elif len(three_cards) not in (0, 3):
+            raise ValueError("底牌需为 3 张（可留空）")
         
         # 保存状态
         self.my_hand_cards = hand_cards
@@ -710,8 +719,8 @@ def main():
             print("无效输入,请重新输入")
         
         # 输入手牌
-        print("\n请输入你的手牌 (例如: 3 4 5 6 7 8 9 10 J Q K A 2 X D)")
-        print("提示: 若你是地主，手牌请包含3张底牌，共20张")
+        print("\n请输入你的手牌，必须正好 17 张 (例如: 3 4 5 6 7 8 9 10 J Q K A 2 X D 3 4)")
+        print("提示: 只输起始 17 张；若你是地主，3 张底牌会自动并入，不要写在手牌里")
         hand_cards_str = input("手牌: ").strip()
 
         # 所有玩家都可以输入底牌（三家都能看到）
