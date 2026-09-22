@@ -293,8 +293,8 @@ class DDZGui:
         self.three_entry.insert(0, "3 4 5")
         self.three_entry.grid(row=0, column=7, padx=4, pady=10, sticky="w")
 
-        ModernButton(setup, "开始对局", command=self.start_new_game, kind="primary"
-                     ).grid(row=0, column=8, padx=(12, 12), pady=10)
+        self.btn_start = ModernButton(setup, "开始对局", command=self.start_new_game, kind="primary")
+        self.btn_start.grid(row=0, column=8, padx=(12, 12), pady=10)
 
         setup.columnconfigure(5, weight=1)
 
@@ -483,8 +483,10 @@ class DDZGui:
         ModernButton(playf, "不出", command=lambda: self._send_and_clear_play("pass"),
                      kind="solid").pack(side=tk.LEFT, padx=4, pady=10)
 
+        ModernButton(playf, "新对局", command=self.start_new_game,
+                     kind="solid").pack(side=tk.LEFT, padx=(20, 4), pady=10)
         ModernButton(playf, "查看状态", command=lambda: self.send_cmd("status"),
-                     kind="ghost").pack(side=tk.LEFT, padx=(20, 4), pady=10)
+                     kind="ghost").pack(side=tk.LEFT, padx=4, pady=10)
         ModernButton(playf, "帮助", command=lambda: self.send_cmd("help"),
                      kind="ghost").pack(side=tk.LEFT, padx=4, pady=10)
         ModernButton(playf, "退出", command=self.quit_program, kind="danger"
@@ -657,10 +659,14 @@ class DDZGui:
         self.send_cmd(f"model {self.model_type.get()}")
         self._on_search_toggle()
         self._set_status("对局中", C["green"])
+        self.btn_start.config(text="新对局")
+        self.footer.config(text="新对局已提交 · 等待开局后按顺序记录出牌")
         self.rec_text.config(text="等待推荐…")
         self.cand_list.delete(0, tk.END)
         self.rec_cards.set_cards([])
         self._last_recommend = ""
+        # 记牌器先恢复满张，待后端记牌器行刷新
+        self.card_counter.update_counts({r: RANK_MAX[r] for r in RANK_ORDER})
 
     def record_player(self, role):
         e = self.entries[role]
@@ -673,6 +679,12 @@ class DDZGui:
 
     def play_cards(self):
         cards = self.play_entry.get().strip()
+        # 允许在出牌框直接敲 CLI 命令（如 reset/quit）
+        low = cards.lower()
+        if low in ("reset", "quit", "exit", "status", "help", "recommend", "model", "search"):
+            self.send_cmd(low)
+            self.play_entry.delete(0, tk.END)
+            return
         if cards:
             self.send_cmd(f"play {cards}")
             self.play_entry.delete(0, tk.END)
@@ -767,6 +779,9 @@ class DDZGui:
         elif "游戏结束" in text or "获胜" in text:
             tag = "green"
             self._set_status("已结束", C["gold"])
+            self.btn_start.config(text="新对局")
+            self.footer.config(
+                text="本局已结束 · 点顶部「新对局」或底部「新对局」，填好手牌/底牌后即可重开")
         elif "游戏开始" in text or "模型加载完成" in text:
             tag = "orange"
             if "模型加载完成" in text:
@@ -775,6 +790,7 @@ class DDZGui:
             if "游戏开始" in text:
                 self._cmd_ready = True
                 self._flush_pending_cmds()
+                self.btn_start.config(text="新对局")
         elif "推荐出牌" in text:
             tag = "gold"
         elif "记牌器" in text:

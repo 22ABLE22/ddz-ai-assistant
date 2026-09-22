@@ -740,12 +740,16 @@ def main():
     # 第一局（失败则进入命令循环，可用 reset 重开）
     if not setup_game():
         print("开局未完成。可输入 reset 重新设置，或 quit 退出。")
-    
+
+    over_hint_shown = False
     while True:
         try:
-            # 检查游戏是否结束
-            if assistant.game_over:
-                print("\n游戏已结束。输入 'reset' 开始新对局，或 'quit' 退出程序。")
+            # 检查游戏是否结束（只提示一次，避免刷屏）
+            if assistant.game_over and not over_hint_shown:
+                print("\n游戏已结束。可点击 GUI「新对局」，或输入 'reset' 开始新对局 / 'quit' 退出。")
+                over_hint_shown = True
+            elif not assistant.game_over:
+                over_hint_shown = False
             
             cmd = input("> ").strip()
             
