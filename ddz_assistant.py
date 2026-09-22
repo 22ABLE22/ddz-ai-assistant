@@ -111,6 +111,13 @@ class DDZAssistant:
             self.search_wp_weight = max(0.0, min(1.0, float(wp_weight)))
         if workers is not None:
             self.search_workers = max(0, int(workers))
+            if self.search_workers <= 1:
+                # 切到单进程时立刻回收并行池
+                try:
+                    from ddz_search import shutdown_pools
+                    shutdown_pools()
+                except Exception:
+                    pass
         if objective is not None:
             obj = objective.strip().upper()
             if obj not in ('WP', 'ADP', 'FUSE', 'MIX'):
