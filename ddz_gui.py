@@ -345,7 +345,7 @@ class DDZGui:
         # 仿真搜索
         search_row = tk.Frame(rec, bg=C["panel"])
         search_row.pack(fill=tk.X, padx=12, pady=(0, 2))
-        self.search_on = tk.BooleanVar(value=False)
+        self.search_on = tk.BooleanVar(value=True)
         tk.Checkbutton(
             search_row, text="深度搜索", variable=self.search_on,
             bg=C["panel"], fg=C["gold"], selectcolor=C["surface"],
@@ -355,7 +355,7 @@ class DDZGui:
         ).pack(side=tk.LEFT)
         tk.Label(search_row, text="仿真", bg=C["panel"], fg=C["muted"],
                  font=("Microsoft YaHei UI", 9)).pack(side=tk.LEFT, padx=(10, 2))
-        self.search_sims_var = tk.StringVar(value="40")
+        self.search_sims_var = tk.StringVar(value="200")
         sims_spin = tk.Spinbox(
             search_row, from_=8, to=300, increment=4, width=5,
             textvariable=self.search_sims_var,
@@ -380,7 +380,7 @@ class DDZGui:
         w_spin.bind("<Return>", lambda e: self._on_search_toggle())
         tk.Label(search_row2, text="并行", bg=C["panel"], fg=C["muted"],
                  font=("Microsoft YaHei UI", 9)).pack(side=tk.LEFT)
-        self.search_workers_var = tk.StringVar(value="0")
+        self.search_workers_var = tk.StringVar(value="8")
         wkr_spin = tk.Spinbox(
             search_row2, from_=0, to=16, increment=1, width=4,
             textvariable=self.search_workers_var,
@@ -523,8 +523,8 @@ class DDZGui:
         try:
             n = max(8, int(self.search_sims_var.get()))
         except Exception:
-            n = 40
-            self.search_sims_var.set("40")
+            n = 200
+            self.search_sims_var.set("200")
         try:
             w = max(0.0, min(1.0, float(self.search_wp_w.get())))
         except Exception:
@@ -533,8 +533,8 @@ class DDZGui:
         try:
             workers = max(0, int(self.search_workers_var.get()))
         except Exception:
-            workers = 0
-            self.search_workers_var.set("0")
+            workers = 8
+            self.search_workers_var.set("8")
         cmd = f"search {'on' if on else 'off'} n={n} w={w:.2f} workers={workers} obj=FUSE"
         self.send_cmd(cmd)
         if on:
@@ -744,6 +744,8 @@ class DDZGui:
             tag = "orange"
             if "模型加载完成" in text:
                 self._set_status("就绪", C["green"])
+                # 默认深度搜索参数同步到后端
+                self._on_search_toggle()
         elif "推荐出牌" in text:
             tag = "gold"
         elif "记牌器" in text:
