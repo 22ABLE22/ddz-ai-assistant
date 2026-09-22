@@ -35,13 +35,13 @@ class DDZAssistant:
         self.model_type = 'WP'
         self.my_position = None
 
-        # 仿真搜索
-        self.search_enabled = False
-        self.search_sims = 40
+        # 仿真搜索（与 GUI 默认一致）
+        self.search_enabled = True
+        self.search_sims = 200
         self.search_top_k = 6
         self.search_objective = 'FUSE'  # WP | ADP | FUSE
         self.search_wp_weight = 0.7     # FUSE 时 WP 权重
-        self.search_workers = 0         # 0=单进程; >1 多进程
+        self.search_workers = 8         # 0=单进程; >1 多进程
 
         # 游戏状态
         self.my_hand_cards = []  # 我的手牌
