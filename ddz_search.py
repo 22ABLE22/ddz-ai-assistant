@@ -425,6 +425,7 @@ def search_best_move(
         print(f"[搜索] 候选 {len(candidates)} 个，仿真 {num_simulations} 次，"
               f"目标 {obj_label} (WP权重={w:.2f})，{mode}")
 
+    used_parallel = False
     if num_workers and num_workers > 1 and ckpt_root:
         # 多进程：复用进程池，按仿真次数切批
         import atexit
@@ -450,15 +451,17 @@ def search_best_move(
                 done += 1
                 if verbose and done % max(1, num_simulations // 4) == 0:
                     print(f"[搜索] 进度 {done}/{num_simulations}")
+            used_parallel = True
         except Exception as e:
             if verbose:
                 print(f"[搜索] 多进程失败，回退单进程: {e}")
             shutdown_pools()
             stats = {k: {"wins": 0, "utils": [], "action": a}
                      for k, a in zip(keys, candidates)}
-            num_workers = 0
 
-    if not (num_workers and num_workers > 1 and ckpt_root):
+    if not used_parallel:
+        # 切到单进程：回收仍驻留的并行 worker 池，避免白占内存
+        shutdown_pools()
         rng = random.Random(seed)
         agents = {p: ModelAgent(models[p]) for p in POSITIONS}
         for i in range(num_simulations):
