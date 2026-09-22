@@ -326,16 +326,17 @@ class DDZGui:
 
         self.hand_entry.bind("<KeyRelease>", self._sync_hand_strip)
 
-        # 中部：推荐 + 日志
+        # 中部：推荐 + 日志（推荐:日志 ≈ 1:4）
         mid = tk.Frame(self.root, bg=C["bg"])
         mid.pack(fill=tk.BOTH, expand=True, **pad)
+        mid.columnconfigure(0, weight=1)
+        mid.columnconfigure(1, weight=4)
+        mid.rowconfigure(0, weight=1)
 
         # 左：推荐
         rec = tk.Frame(mid, bg=C["panel"], highlightbackground=C["border"],
                        highlightthickness=1)
-        rec.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=(0, 6))
-        rec.configure(width=320)
-        rec.pack_propagate(False)
+        rec.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
 
         tk.Label(rec, text="AI 推荐出牌", bg=C["panel"], fg=C["gold"],
                  font=("Microsoft YaHei UI", 12, "bold")).pack(anchor="w", padx=14, pady=(12, 2))
@@ -430,7 +431,7 @@ class DDZGui:
         # 右：日志
         logf = tk.Frame(mid, bg=C["panel"], highlightbackground=C["border"],
                         highlightthickness=1)
-        logf.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(6, 0))
+        logf.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
 
         tk.Label(logf, text="程序输出", bg=C["panel"], fg=C["muted"],
                  font=("Microsoft YaHei UI", 9)).pack(anchor="w", padx=12, pady=(10, 4))
