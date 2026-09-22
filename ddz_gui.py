@@ -153,8 +153,18 @@ class CardCounter(tk.Frame):
                 tile.config(bg="#1A2420", highlightbackground="#2A3530")
                 top.config(bg="#1A2420", fg=C["muted"])
                 num.config(bg="#1A2420", fg=C["muted"])
-            elif left >= RANK_MAX[rank] or (rank in ("X", "D") and jokers_hot):
-                # 红框：仍可能成炸（满张）或王炸双王未见
+            elif rank in ("X", "D"):
+                # 王：仅当大小王都未见（可能王炸）才红框；只缺一张不标红
+                if jokers_hot:
+                    tile.config(bg=C["panel2"], highlightbackground=C["red"])
+                    top.config(bg=C["panel2"], fg=C["ink"])
+                    num.config(bg=C["panel2"], fg=C["red"])
+                else:
+                    tile.config(bg=C["panel2"], highlightbackground=C["border"])
+                    top.config(bg=C["panel2"], fg=C["ink"])
+                    num.config(bg=C["panel2"], fg=C["gold"])
+            elif left >= RANK_MAX[rank]:
+                # 红框：该点数仍满张，可能四炸
                 tile.config(bg=C["panel2"], highlightbackground=C["red"])
                 top.config(bg=C["panel2"], fg=C["ink"])
                 num.config(bg=C["panel2"], fg=C["red"])
