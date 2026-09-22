@@ -724,7 +724,8 @@ def main():
         hand_cards_str = input("手牌: ").strip()
 
         # 所有玩家都可以输入底牌（三家都能看到）
-        print("\n请输入三张底牌 (例如: 3 4 5，所有玩家都能看到，可留空)")
+        print("\n请输入三张底牌（地主必填正好 3 张；农民可留空）")
+        print("提示: 地主手牌不会手输底牌，系统会自动并入")
         three_cards_str = input("底牌: ").strip()
         if three_cards_str.lower() in ("pass", "无", "none", "-"):
             three_cards_str = ""

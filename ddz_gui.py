@@ -649,10 +649,18 @@ class DDZGui:
         except Exception as e:
             self.append_output(f"发送命令失败: {e}\n", tag="red")
 
+    @staticmethod
+    def _normalize_card_input(s: str) -> str:
+        """把无/none/-/pass 等哨兵归一为空串，避免伪“可留空”绕过校验。"""
+        t = (s or "").strip()
+        if t.lower() in ("", "pass", "none", "-", "无", "wu"):
+            return ""
+        return t
+
     def start_new_game(self):
         role = self.my_role.get()
         hand = self.hand_entry.get().strip()
-        three = self.three_entry.get().strip()
+        three = self._normalize_card_input(self.three_entry.get())
         if not hand:
             messagebox.showwarning("提示", "请先输入手牌")
             return
@@ -664,6 +672,12 @@ class DDZGui:
                 f"请只填起始手牌；若你是地主，3 张底牌会自动并入，不要写进手牌。")
             return
         three_n = len(parse_hand_display(three)) if three else 0
+        # 有内容却解析不出牌 → 非法输入，不能发给后端
+        if three and three_n == 0:
+            messagebox.showwarning(
+                "底牌无法识别",
+                "底牌只能是牌面（如 3 4 5）或留空/无/pass。")
+            return
         if ROLE_MAP.get(role) == "landlord" and three_n != 3:
             messagebox.showwarning(
                 "底牌张数不对",
