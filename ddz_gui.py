@@ -505,10 +505,8 @@ class DDZGui:
         ModernButton(playf, "不出", command=lambda: self._send_and_clear_play("pass"),
                      kind="solid").pack(side=tk.LEFT, padx=4, pady=10)
 
-        ModernButton(playf, "新对局", command=self.start_new_game,
-                     kind="solid").pack(side=tk.LEFT, padx=(20, 4), pady=10)
         ModernButton(playf, "查看状态", command=lambda: self.send_cmd("status"),
-                     kind="ghost").pack(side=tk.LEFT, padx=4, pady=10)
+                     kind="ghost").pack(side=tk.LEFT, padx=(20, 4), pady=10)
         ModernButton(playf, "帮助", command=lambda: self.send_cmd("help"),
                      kind="ghost").pack(side=tk.LEFT, padx=4, pady=10)
         ModernButton(playf, "退出", command=self.quit_program, kind="danger"
@@ -847,7 +845,7 @@ class DDZGui:
             self._set_status("已结束", C["gold"])
             self.btn_start.config(text="新对局")
             self.footer.config(
-                text="本局已结束 · 点顶部「新对局」或底部「新对局」，填好手牌/底牌后即可重开")
+                text="本局已结束 · 点底牌旁「新对局」，填好手牌/底牌后即可重开")
         elif "游戏开始" in text or "模型加载完成" in text:
             tag = "orange"
             if "模型加载完成" in text:

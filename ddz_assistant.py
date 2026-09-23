@@ -217,13 +217,12 @@ class DDZAssistant:
         self.my_hand_cards = hand_cards
         self.three_cards = three_cards
 
-        # 记牌器：初始化为「已见」自己的手牌（+农民的底牌）
+        # 记牌器：只计自己的起始手牌（不含底牌）
+        # 非地主时不把底牌算作“已见”，否则会少算未知张、误判无法成炸
+        # 地主手牌已合并底牌，统计手牌即可
         self.seen_cards = Counter()
         for c in hand_cards:
             self.seen_cards[c] += 1
-        if position != 'landlord':
-            for c in three_cards:
-                self.seen_cards[c] += 1
         
         # 如果是地主，底牌已经包含在手牌中
         if position == 'landlord':
