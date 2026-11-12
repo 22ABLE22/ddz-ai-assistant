@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e3d2e">
+<title>斗地主军师</title>
+<style>
+  /* ===== 设计令牌（来源：design-system/ddz-assistant/MASTER.md，按 WCAG 校正） ===== */
+  :root {
+    color-scheme: dark;
+
+    --bg:            #0e3d2e;   /* 牌桌绒面 */
+    --bg-deep:       #0b2f22;   /* 输入框 / 牌面底 */
+    --card:          #16543f;
+    --card-hi:       #1a6049;
+    --border:        #2a7a5e;
+    --border-soft:   rgba(255,255,255,.08);
+
+    --fg:            #ffffff;   /* 卡片底 8.85:1 */
+    --fg-body:       #eeeeee;   /* 页面底 10.49:1 */
+    --fg-muted:      #a5d6c4;   /* 卡片底 5.48:1 */
+    --fg-hint:       #9ad9bf;   /* 卡片底 5.50:1（原 #7fc4a8 仅 4.37:1，不达标） */
+
+    --gold:          #ffd54f;   /* 卡片底 6.27:1 */
+    --gold-ink:      #1a1a1a;   /* 金底 12.33:1 */
+    --teal:          #00796b;   /* 白字 5.32:1（原 #26a69a 仅 3.00:1，不达标） */
+    --teal-hi:       #0f766e;
+    --red:           #b71c1c;   /* 白字 6.57:1 */
+    --danger:        #ffb4ab;   /* 卡片底 5.21:1（原 #ff8a80 仅 3.87:1，不达标） */
+
+    --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;
+    --sp-1: 4px;  --sp-2: 8px;   --sp-3: 12px;
+    --sp-4: 16px; --sp-5: 24px;  --sp-6: 32px;
+    --tap: 48px;                 /* 触控最小尺寸 */
+    --ease: 160ms cubic-bezier(.2,.7,.3,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+                 "Microsoft YaHei", system-ui, sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #12513c 0%, var(--bg) 55%, #0a3126 100%);
+    background-attachment: fixed;
+    color: var(--fg-body);
+    padding: max(var(--sp-3), env(safe-area-inset-top)) var(--sp-3)
+             max(var(--sp-5), env(safe-area-inset-bottom));
+    min-height: 100vh;
+    overscroll-behavior-y: contain;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  main { width: 100%; max-width: 560px; margin: 0 auto; }
+
+  /* ===== 顶栏 ===== */
+  .appbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: var(--sp-2);
+    margin: calc(-1 * var(--sp-1)) calc(-1 * var(--sp-3)) var(--sp-3);
+    padding: var(--sp-3);
+    padding-top: max(var(--sp-3), env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(10,49,38,.96) 70%, rgba(10,49,38,0));
+    backdrop-filter: blur(8px);
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-2); flex: 1; min-width: 0; }
+  .brand-mark {
+    flex: 0 0 auto; width: 28px; height: 28px;
+    display: grid; place-items: center;
+    border-radius: 7px; background: var(--gold); color: var(--gold-ink);
+    font-weight: 800; font-size: 15px; line-height: 1;
+  }
+  .brand-text { font-size: 16px; font-weight: 700; color: var(--gold); letter-spacing: .02em;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-3);
+    margin-bottom: var(--sp-3);
+    box-shadow: 0 4px 6px rgba(0,0,0,.18);
+  }
+  .card > h2 {
+    font-size: 13px; font-weight: 600; letter-spacing: .06em;
+    color: var(--fg-muted); text-transform: none;
+    margin-bottom: var(--sp-3);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  }
+  .card > h2 .tag {
+    font-size: 11px; font-weight: 500; letter-spacing: 0;
+    color: var(--fg-hint); background: rgba(0,0,0,.22);
+    padding: 3px 8px; border-radius: 999px;
+  }
+
+  label { display: block; font-size: 13px; color: var(--fg-muted); margin: var(--sp-3) 0 var(--sp-2); }
+  label:first-of-type { margin-top: 0; }
+
+  input[type=text] {
+    width: 100%; min-height: var(--tap);
+    padding: 12px 14px; font-size: 17px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--r-sm);
+    background: var(--bg-deep); color: var(--fg);
+    letter-spacing: .08em; transition: border-color var(--ease), box-shadow var(--ease);
+  }
+  input[type=text]::placeholder { color: #6ea892; letter-spacing: .04em; }
+  input[type=text]:focus-visible {
+    outline: none; border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(255,213,79,.28);
+  }
+
+  /* ===== 按钮 ===== */
+  button {
+    flex: 1; min-width: 64px; min-height: var(--tap);
+    padding: 12px 14px; font-size: 16px; font-weight: 600; font-family: inherit;
+    border: 1px solid transparent; border-radius: var(--r-sm);
+    cursor: pointer; touch-action: manipulation;
+    transition: transform var(--ease), filter var(--ease), opacity var(--ease);
+  }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  button:active:not(:disabled) { transform: scale(.975); filter: brightness(1.08); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-main  { background: var(--gold); color: var(--gold-ink); }
+  .btn-rec   { background: var(--teal); color: #fff; }
+  .btn-ghost { background: var(--border); color: var(--fg); }
+  .btn-pass  { background: var(--red); color: #fff; }
+  .btn-undo  { background: transparent; color: var(--fg-muted); border-color: var(--border); }
+
+  .btnrow { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .btnrow + .btnrow { margin-top: var(--sp-2); }
+
+  /* 分段选择 */
+  .seg { display: flex; gap: 6px; background: rgba(0,0,0,.18); padding: 4px; border-radius: 10px; }
+  .seg button {
+    min-height: 44px; font-size: 14px; font-weight: 600;
+    background: transparent; color: var(--fg-muted); border-radius: 7px;
+  }
+  .seg button[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); }
+
+  /* ===== 状态条 ===== */
+  .status {
+    display: flex; align-items: center; gap: var(--sp-2);
+    font-size: 14px; line-height: 1.45; color: var(--fg-muted);
+    padding: 10px 12px; border-radius: var(--r-sm);
+    background: rgba(0,0,0,.22); border: 1px solid var(--border-soft);
+    margin-bottom: var(--sp-3); min-height: var(--tap);
+  }
+  .status .dot {
+    flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--fg-hint); box-shadow: 0 0 0 3px rgba(154,217,191,.16);
+  }
+  .status[data-tone="turn"]  { color: var(--gold); border-color: rgba(255,213,79,.35); }
+  .status[data-tone="turn"] .dot { background: var(--gold); box-shadow: 0 0 0 3px rgba(255,213,79,.2); }
+  .status[data-tone="error"] { color: var(--danger); border-color: rgba(255,180,171,.4); }
+  .status[data-tone="error"] .dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(255,180,171,.18); }
+  .status[data-tone="busy"] .dot { animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+  /* ===== 牌面 chips ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 44px; padding: 0 7px;
+    font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: var(--bg-deep); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 7px;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,.35);
+  }
+  .chip.big  { color: var(--gold); border-color: rgba(255,213,79,.5); }
+  .chip.joker { color: #ff8a65; border-color: rgba(255,138,101,.5); }
+  .chips-empty { color: var(--fg-hint); font-size: 14px; }
+
+  /* ===== 记牌器 ===== */
+  .counter { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+  @media (max-width: 380px) { .counter { grid-template-columns: repeat(5, 1fr); } }
+  .cbox {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px; padding: 6px 2px; border-radius: 7px;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    transition: border-color var(--ease), opacity var(--ease);
+  }
+  .cbox .k { font-size: 13px; font-weight: 700; color: var(--fg-muted); line-height: 1.1; }
+  .cbox .v { font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .cbox.hot  { border-color: #ff5252; border-width: 2px; padding: 5px 1px; }
+  .cbox.hot .v { color: #ff8a80; }
+  .cbox.done { opacity: .38; }
+  .cbox.done .v { color: var(--fg-hint); }
+
+  .legend { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-3);
+            font-size: 12px; color: var(--fg-hint); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .legend .sw-hot  { border: 2px solid #ff5252; background: var(--bg-deep); }
+  .legend .sw-done { background: var(--bg-deep); border: 1px solid var(--border); opacity: .4; }
+
+  /* ===== 推荐结果 ===== */
+  .move {
+    display: none; margin-top: var(--sp-3); padding: var(--sp-3);
+    background: var(--bg-deep); border: 1px solid rgba(255,213,79,.35);
+    border-radius: var(--r-sm);
+  }
+  .move.show { display: block; }
+  .move .move-label { font-size: 12px; color: var(--fg-hint); margin-bottom: var(--sp-2); letter-spacing: .04em; }
+  .move .move-cards { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .move .pass-text { font-size: 20px; font-weight: 700; color: var(--red); }
+
+  /* 候选列表 */
+  .cands { margin-top: var(--sp-3); }
+  .cands-title { font-size: 12px; color: var(--fg-hint); margin-bottom: var(--sp-2); letter-spacing: .04em; }
+  .cand {
+    display: flex; align-items: center; gap: var(--sp-2);
+    width: 100%; min-height: 52px; padding: 8px 10px; margin-bottom: 6px;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: var(--r-sm); color: var(--fg-body);
+    text-align: left; font-weight: 500; font-size: 15px;
+  }
+  .cand[aria-pressed="true"] { border-color: var(--gold); background: #123c2c; }
+  .cand .rank {
+    flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    background: var(--border); color: var(--fg);
+  }
+  .cand[aria-pressed="true"] .rank { background: var(--gold); color: var(--gold-ink); }
+  .cand .cand-cards { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .cand .cand-cards .chip { height: 30px; min-width: 24px; font-size: 14px; padding: 0 5px; border-radius: 5px; }
+  .cand .cand-score { flex: 0 0 auto; font-size: 12px; color: var(--fg-hint); font-variant-numeric: tabular-nums; }
+
+  .hint { font-size: 12px; line-height: 1.6; color: var(--fg-hint); margin-top: var(--sp-2); }
+  .hint kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+    background: rgba(0,0,0,.3); border: 1px solid var(--border-soft);
+    border-radius: 4px; padding: 1px 5px; color: var(--fg);
+  }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <div class="appbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">♠</span>
+      <span class="brand-text">斗地主军师</span>
+    </div>
+    <button class="btn-ghost" style="flex:0 0 auto;min-width:84px;font-size:14px"
+            onclick="resetGame()">新对局</button>
+  </div>
+
+  <div class="status" id="status" role="status" aria-live="polite" data-tone="idle">
+    <span class="dot" aria-hidden="true"></span>
+    <span id="statusText">等待开局</span>
+  </div>
+
+  <!-- ===== 开局 ===== -->
+  <section class="card">
+    <h2>开局 <span class="tag" id="posTag">我是地主</span></h2>
+
+    <label id="posLabel">我的身份</label>
+    <div class="seg" id="posseg" role="group" aria-labelledby="posLabel">
+      <button type="button" data-pos="landlord"      aria-pressed="true">我是地主</button>
+      <button type="button" data-pos="landlord_down" aria-pressed="false">地主下家</button>
+      <button type="button" data-pos="landlord_up"   aria-pressed="false">地主上家</button>
+    </div>
+
+    <label for="handInput">我的手牌<span class="visually-hidden">，共 17 张</span></label>
+    <input type="text" id="handInput" inputmode="text" autocomplete="off"
+           autocapitalize="characters" spellcheck="false"
+           placeholder="例如 3 4 5 6 7 J J Q Q K K A 2 2 X" aria-describedby="cardFormatHint">
+    <div class="hint" id="cardFormatHint">
+      牌面写法：<kbd>3</kbd>–<kbd>10</kbd>、<kbd>J</kbd> <kbd>Q</kbd> <kbd>K</kbd> <kbd>A</kbd> <kbd>2</kbd>，
+      <kbd>X</kbd>=小王、<kbd>D</kbd>=大王。空格可省略，<kbd>1</kbd> 按 <kbd>10</kbd> 处理。
+    </div>
+
+    <label for="threeInput">底牌<span class="visually-hidden">，地主必填 3 张，农民可空</span></label>
+    <input type="text" id="threeInput" inputmode="text" autocomplete="off"
+           autocapitalize="characters" spellcheck="false" placeholder="地主必填 3 张，如 9 9 2">
+
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn-main" onclick="startGame()">开始对局</button>
+    </div>
+    <div class="hint" id="handCount">手牌需正好 17 张；地主会自动并入 3 张底牌成为 20 张。</div>
+  </section>
+
+  <!-- ===== 对局 ===== -->
+  <section class="card">
+    <h2>对局 <span class="tag" id="turnTag">—</span></h2>
+
+    <label id="recLabel">谁出的牌</label>
+    <div class="seg" id="recposseg" role="group" aria-labelledby="recLabel">
+      <button type="button" data-pos="landlord"      aria-pressed="false">地主</button>
+      <button type="button" data-pos="landlord_down" aria-pressed="true">地主下家</button>
+      <button type="button" data-pos="landlord_up"   aria-pressed="false">地主上家</button>
+    </div>
+
+    <label for="recInput">出的牌<span class="visually-hidden">，留空表示不出</span></label>
+    <input type="text" id="recInput" inputmode="text" autocomplete="off"
+           autocapitalize="characters" spellcheck="false" placeholder="如 33 44；留空表示「不出」">
+
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn-rec"  id="btnRecord"  onclick="recordMove()">记录出牌</button>
+      <button class="btn-ghost" id="btnRecommend" onclick="doRecommend()">推荐出牌</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn-undo" id="btnUndo" onclick="undoMove()" disabled>撤销上一步</button>
+    </div>
+
+    <div class="move" id="move" aria-live="polite">
+      <div class="move-label" id="moveLabel">推荐出牌</div>
+      <div class="move-cards" id="moveCards"></div>
+    </div>
+
+    <div class="cands" id="cands" hidden>
+      <div class="cands-title">候选方案（点选后「采用推荐」）</div>
+      <div id="candList"></div>
+    </div>
+
+    <div class="btnrow" id="adoptRow" style="margin-top:10px; display:none">
+      <button class="btn-main" id="btnAdopt" onclick="adoptMove()">采用推荐</button>
+      <button class="btn-pass" onclick="doPlay('')">不出</button>
+    </div>
+  </section>
+
+  <!-- ===== 我的手牌 ===== -->
+  <section class="card">
+    <h2>我的剩余手牌 <span class="tag" id="handTag">—</span></h2>
+    <div class="chips" id="hand"><span class="chips-empty">尚未开局</span></div>
+  </section>
+
+  <!-- ===== 记牌器 ===== -->
+  <section class="card">
+    <h2>记牌器 <span class="tag">未出现张数</span></h2>
+    <div class="counter" id="unseen" role="group" aria-label="各点数尚未出现的张数"></div>
+    <div class="legend">
+      <span><i class="sw-hot"></i>满张 / 双王未见，可能成炸</span>
+      <span><i class="sw-done"></i>已出完</span>
+    </div>
+  </section>
+
+</main>
+
+<script>
+'use strict';
+
+/* ===== 牌面工具 ===== */
+const RANK_ORDER = ['3','4','5','6','7','8','9','10','J','Q','K','A','2','X','D'];
+const RANK_MAX   = {'3':4,'4':4,'5':4,'6':4,'7':4,'8':4,'9':4,'10':4,'J':4,'Q':4,'K':4,'A':4,'2':4,'X':1,'D':1};
+const BIG_RANKS  = new Set(['2','X','D']);
+const JOKER_RANKS = new Set(['X','D']);
+
+/** 把 "3 4 5 6 7 J J Q Q" / "34567JJQQ" 拆成牌面数组 */
+function splitCards(text) {
+  const s = String(text || '').toUpperCase().replace(/[\s,，、]/g, '');
+  const out = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '1') { out.push('10'); if (s[i+1] === '0') i++; continue; }
+    if (RANK_MAX[c] !== undefined) out.push(c);
+  }
+  return out;
+}
+
+function chipEl(rank) {
+  const el = document.createElement('span');
+  el.className = 'chip' + (JOKER_RANKS.has(rank) ? ' joker' : (BIG_RANKS.has(rank) ? ' big' : ''));
+  el.textContent = rank;
+  return el;
+}
+
+function renderChips(container, ranks, emptyText) {
+  container.textContent = '';
+  if (!ranks || !ranks.length) {
+    const s = document.createElement('span');
+    s.className = 'chips-empty';
+    s.textContent = emptyText || '—';
+    container.appendChild(s);
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  ranks.forEach(r => frag.appendChild(chipEl(r)));
+  container.appendChild(frag);
+}
+
+/* ===== 状态 ===== */
+let pos = localStorage.getItem('ddz.position') || 'landlord';
+let recPos = localStorage.getItem('ddz.recordPosition') || 'landlord_down';
+let selectedMove = null;   // 当前选中的推荐/候选（字符串，'' 表示不出）
+let lastHandText = '—';
+let lastUnseen = null;
+
+const $ = id => document.getElementById(id);
+const POS_NAME = {landlord: '地主', landlord_up: '地主上家', landlord_down: '地主下家'};
+
+function setStatus(text, tone) {
+  $('statusText').textContent = text;
+  $('status').dataset.tone = tone || 'idle';
+}
+
+function setBusy(on) {
+  ['btnRecord','btnRecommend','btnUndo','btnAdopt'].forEach(id => {
+    const el = $(id);
+    if (el) el.disabled = on || (id === 'btnUndo' && !canUndo);
+  });
+  $('btnUndo').disabled = on || !canUndo;
+  if (on) setStatus('处理中…', 'busy');
+}
+
+let canUndo = false;
+function applyCanUndo(v) {
+  canUndo = !!v;
+  $('btnUndo').disabled = !canUndo;
+}
+
+/* ===== 分段选择 ===== */
+function wireSeg(segId, current, onPick) {
+  const seg = $(segId);
+  seg.querySelectorAll('button').forEach(btn => {
+    const on = btn.dataset.pos === current;
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.onclick = () => {
+      seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      onPick(btn.dataset.pos);
+    };
+  });
+}
+wireSeg('posseg', pos, v => {
+  pos = v;
+  localStorage.setItem('ddz.position', pos);
+  $('posTag').textContent = POS_NAME[pos];
+});
+wireSeg('recposseg', recPos, v => {
+  recPos = v;
+  localStorage.setItem('ddz.recordPosition', recPos);
+});
+$('posTag').textContent = POS_NAME[pos];
+
+/* 手牌张数实时提示 */
+$('handInput').addEventListener('input', () => {
+  const n = splitCards($('handInput').value).length;
+  const el = $('handCount');
+  if (n === 0) { el.textContent = '手牌需正好 17 张；地主会自动并入 3 张底牌成为 20 张。'; return; }
+  el.textContent = `已输入 ${n} 张` + (n === 17 ? ' ✓ 张数正确' : `（需 17 张，还差 ${Math.abs(17 - n)} 张）`);
+  el.style.color = n === 17 ? 'var(--gold)' : 'var(--fg-hint)';
+});
+
+/* ===== 接口 ===== */
+let busy = false;
+async function api(path, body) {
+  if (busy) return { ok: false, error: '请等待上一个操作完成' };
+  busy = true;
+  setBusy(true);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    const data = await r.json();
+    return data || { ok: false, error: '服务器返回为空' };
+  } catch (e) {
+    return { ok: false, error: '连接失败，请检查电脑上的服务是否已启动' };
+  } finally {
+    busy = false;
+    setBusy(false);
+  }
+}
+
+/* ===== 渲染 ===== */
+function renderHand(text) {
+  lastHandText = text || '—';
+  const ranks = splitCards(lastHandText);
+  renderChips($('hand'), ranks, '—');
+  $('handTag').textContent = ranks.length ? ranks.length + ' 张' : '—';
+}
+
+function renderUnseen(u) {
+  lastUnseen = u;
+  const box = $('unseen');
+  box.textContent = '';
+  if (!u) { return; }
+  const frag = document.createDocumentFragment();
+  RANK_ORDER.forEach(k => {
+    const n = (u[k] === undefined || u[k] === null) ? 0 : u[k];
+    const max = RANK_MAX[k] || 4;
+    const d = document.createElement('div');
+    d.className = 'cbox' + (n === max ? ' hot' : (n === 0 ? ' done' : ''));
+    d.setAttribute('role', 'img');
+    d.setAttribute('aria-label', `${k} 剩 ${n} 张` + (n === max ? '，可能成炸' : (n === 0 ? '，已出完' : '')));
+    const kk = document.createElement('span'); kk.className = 'k'; kk.textContent = k;
+    const vv = document.createElement('span'); vv.className = 'v'; vv.textContent = n;
+    d.appendChild(kk); d.appendChild(vv);
+    frag.appendChild(d);
+  });
+  box.appendChild(frag);
+}
+
+function renderMove(display) {
+  selectedMove = display;
+  const wrap = $('move');
+  wrap.classList.add('show');
+  $('moveLabel').textContent = '推荐出牌';
+  renderChips($('moveCards'), splitCards(display), '不出');
+  if (!splitCards(display).length) {
+    $('moveCards').innerHTML = '<span class="pass-text">不出</span>';
+  }
+  $('adoptRow').style.display = 'flex';
+}
+
+function renderCandidates(list) {
+  const box = $('cands'), host = $('candList');
+  host.textContent = '';
+  if (!list || list.length <= 1) { box.hidden = true; return; }
+  box.hidden = false;
+  list.forEach(row => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cand';
+    btn.setAttribute('aria-pressed', row.is_best ? 'true' : 'false');
+
+    const rank = document.createElement('span');
+    rank.className = 'rank'; rank.textContent = row.rank;
+
+    const cards = document.createElement('span');
+    cards.className = 'cand-cards';
+    const ranks = splitCards(row.display);
+    if (ranks.length) ranks.forEach(r => cards.appendChild(chipEl(r)));
+    else { const s = document.createElement('span'); s.textContent = '不出'; cards.appendChild(s); }
+
+    const score = document.createElement('span');
+    score.className = 'cand-score';
+    score.textContent = row.score_text || '';
+
+    btn.appendChild(rank); btn.appendChild(cards); btn.appendChild(score);
+    btn.onclick = () => {
+      host.querySelectorAll('.cand').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      selectedMove = row.display;
+      $('move').classList.add('show');
+      $('moveLabel').textContent = `已选第 ${row.rank} 个方案`;
+      renderChips($('moveCards'), splitCards(row.display), '不出');
+      if (!splitCards(row.display).length) {
+        $('moveCards').innerHTML = '<span class="pass-text">不出</span>';
+      }
+      $('adoptRow').style.display = 'flex';
+    };
+    host.appendChild(btn);
+  });
+}
+
+function setTurn(nextPosition) {
+  const label = POS_NAME[nextPosition] || '—';
+  $('turnTag').textContent = '轮到 ' + label;
+  if (nextPosition === pos) {
+    setStatus(`轮到你了 — 点「推荐出牌」获取建议`, 'turn');
+  } else {
+    setStatus(`等待 ${label} 出牌 — 记录后继续`, 'idle');
+  }
+}
+
+/* ===== 动作 ===== */
+async function resetGame() {
+  const r = await api('/api/reset', {});
+  if (!r.ok) { setStatus('新对局失败：' + r.error, 'error'); return; }
+  renderHand('—');
+  renderUnseen(null);
+  $('unseen').textContent = '';
+  $('move').classList.remove('show');
+  $('cands').hidden = true;
+  $('adoptRow').style.display = 'none';
+  selectedMove = null;
+  applyCanUndo(false);
+  $('turnTag').textContent = '—';
+  $('recInput').value = '';
+  setStatus('已重置，请输入新手牌', 'idle');
+}
+
+async function startGame() {
+  const hand = $('handInput').value.trim();
+  const three = $('threeInput').value.trim();
+  if (!hand) { setStatus('请先输入 17 张手牌', 'error'); $('handInput').focus(); return; }
+  const r = await api('/api/start', { position: pos, hand, three });
+  if (!r.ok) { setStatus('开局失败：' + r.error, 'error'); return; }
+  renderHand(r.hand);
+  renderUnseen(r.unseen);
+  applyCanUndo(false);
+  $('move').classList.remove('show');
+  $('cands').hidden = true;
+  $('adoptRow').style.display = 'none';
+  setTurn('landlord');
+  setStatus('已开局 — 按顺序记录别人的出牌', 'idle');
+}
+
+async function recordMove() {
+  const cards = $('recInput').value.trim();
+  const r = await api('/api/record', { position: recPos, cards });
+  if (!r.ok) { setStatus('记录失败：' + r.error, 'error'); return; }
+  $('recInput').value = '';
+  renderHand(r.hand);
+  renderUnseen(r.unseen);
+  applyCanUndo(r.can_undo);
+  $('move').classList.remove('show');
+  $('cands').hidden = true;
+  $('adoptRow').style.display = 'none';
+  if (r.game_over) { setStatus('本局结束', 'turn'); $('turnTag').textContent = '已结束'; return; }
+  setTurn(r.next_position);
+}
+
+async function undoMove() {
+  const r = await api('/api/undo', {});
+  if (!r.ok) { setStatus('撤销失败：' + r.error, 'error'); return; }
+  renderHand(r.hand);
+  renderUnseen(r.unseen);
+  applyCanUndo(r.can_undo);
+  $('move').classList.remove('show');
+  $('cands').hidden = true;
+  $('adoptRow').style.display = 'none';
+  setTurn(r.next_position);
+  setStatus('已撤销上一步 — 可重新记录', 'idle');
+}
+
+async function doRecommend() {
+  const r = await api('/api/recommend');
+  if (!r.ok) { setStatus(r.error, 'error'); return; }
+  renderHand(r.hand);
+  renderUnseen(r.unseen);
+  applyCanUndo(r.can_undo);
+  renderMove(r.move);
+  renderCandidates(r.candidates);
+  setStatus('推荐已生成 — 可点候选切换方案，再「采用推荐」', 'turn');
+}
+
+async function adoptMove() {
+  if (selectedMove === null) return;
+  const cards = (selectedMove === '不出') ? '' : selectedMove;
+  await doPlay(cards);
+}
+
+async function doPlay(cards) {
+  const r = await api('/api/play', { cards });
+  if (!r.ok) { setStatus('出牌失败：' + r.error, 'error'); return; }
+  renderHand(r.hand);
+  renderUnseen(r.unseen);
+  applyCanUndo(r.can_undo);
+  $('move').classList.remove('show');
+  $('cands').hidden = true;
+  $('adoptRow').style.display = 'none';
+  selectedMove = null;
+  if (r.game_over) { setStatus('本局结束', 'turn'); $('turnTag').textContent = '已结束'; return; }
+  setTurn(r.next_position);
+}
+
+/* ===== 启动自检：服务可达性 ===== */
+(async function ping() {
+  try {
+    const r = await fetch('/api/health', { method: 'POST' });
+    const d = await r.json();
+    if (d && d.ok) setStatus('服务已连接 — 输入手牌开始', 'idle');
+  } catch (e) {
+    setStatus('无法连接电脑服务，请确认已运行 start_web.bat', 'error');
+  }
+})();
+</script>
+</body>
+</html>

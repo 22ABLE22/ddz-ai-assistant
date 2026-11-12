@@ -315,7 +315,12 @@ class DDZGui:
         self.three_entry.grid(row=0, column=7, padx=4, pady=10, sticky="w")
 
         self.btn_start = ModernButton(setup, "开始对局", command=self.start_new_game, kind="primary")
-        self.btn_start.grid(row=0, column=8, padx=(12, 12), pady=10)
+        self.btn_start.grid(row=0, column=8, padx=(6, 6), pady=10)
+
+        # 截图识别：从游戏窗口抓图自动填入手牌
+        self.btn_capture = ModernButton(setup, "截图识别", command=self.capture_hand,
+                                        kind="ghost")
+        self.btn_capture.grid(row=0, column=9, padx=(0, 12), pady=10)
 
         setup.columnconfigure(5, weight=1)
 
@@ -665,6 +670,52 @@ class DDZGui:
         if t.lower() in ("", "pass", "none", "-", "无", "wu"):
             return ""
         return t
+
+    def capture_hand(self):
+        """
+        截图识别：抓取游戏窗口 → 识别手牌 → 填入手牌框。
+        只做只读抓图与图像识别，不注入进程、不模拟点击。
+        识别结果会填入输入框，用户需自行核对后再「开始对局」。
+        """
+        try:
+            import ddz_capture
+        except Exception as e:
+            messagebox.showerror("截图识别不可用", f"无法加载 ddz_capture 模块：\n{e}")
+            return
+
+        self.append_output("正在抓取游戏窗口并识别手牌…")
+        try:
+            cap = ddz_capture.capture()
+        except Exception as e:
+            self.append_output(f"截图识别异常：{e}")
+            messagebox.showerror("截图识别失败", str(e))
+            return
+
+        if cap.error:
+            self.append_output(f"截图识别失败：{cap.error}")
+            messagebox.showwarning("截图识别失败", cap.error)
+            return
+
+        ranks = [c.rank for c in cap.hand]
+        if not ranks:
+            messagebox.showwarning("截图识别", "未识别到任何手牌。")
+            return
+
+        text = " ".join(ranks)
+        self.hand_entry.delete(0, tk.END)
+        self.hand_entry.insert(0, text)
+        self._sync_hand_strip()
+
+        n = len(ranks)
+        self.append_output(f"截图识别到 {n} 张手牌：{text}")
+        if n != 17:
+            messagebox.showinfo(
+                "截图识别完成",
+                f"识别到 {n} 张手牌：\n{text}\n\n"
+                f"注意：标准开局手牌应为 17 张（地主 20 张含底牌）。\n"
+                f"当前 {n} 张，可能牌局已进行中或部分牌被遮挡，请自行核对后再开始对局。")
+        else:
+            messagebox.showinfo("截图识别完成", f"识别到 17 张手牌：\n{text}\n\n请核对无误后点「开始对局」。")
 
     def start_new_game(self):
         role = self.my_role.get()

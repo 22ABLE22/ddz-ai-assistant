@@ -61,6 +61,9 @@ class DDZAssistant:
         # 记牌器：已出现（见过）的牌
         self.seen_cards = Counter()
 
+        # 撤销栈：每次记录/出牌前压入状态快照（仅内存，不影响原有逻辑）
+        self._undo_stack = []
+
         # 加载 WP / ADP 两套模型
         print("正在加载AI模型 (WP + ADP)...")
         for mtype in MODEL_TYPES:
@@ -194,9 +197,7 @@ class DDZAssistant:
         hand_cards_str: 手牌字符串
         three_cards_str: 三张底牌字符串 (所有玩家都可以输入)
         """
-        self.my_position = position
-        
-        # 解析手牌：必须正好 17 张（发牌手牌；地主再并入底牌）
+        # 先解析并校验；校验失败时不破坏当前对局状态
         hand_cards = self.parse_cards(hand_cards_str)
         if len(hand_cards) != 17:
             raise ValueError(
@@ -212,7 +213,23 @@ class DDZAssistant:
             hand_cards = sorted(hand_cards + three_cards)
         elif len(three_cards) not in (0, 3):
             raise ValueError("底牌需为 3 张（可留空）")
-        
+
+        # 校验通过，清空上一局状态，避免第二次开局继承旧轮次
+        # （修复：连续开局时 acting_player_position 仍是上局的值）
+        self.card_play_action_seq = []
+        self.played_cards = {'landlord': [], 'landlord_up': [], 'landlord_down': []}
+        self.last_move_dict = {'landlord': [], 'landlord_up': [], 'landlord_down': []}
+        self.last_move = []
+        self.last_pid = 'landlord'
+        self.bomb_num = 0
+        self.acting_player_position = 'landlord'  # 斗地主固定由地主先出
+        self.game_over = False
+        self.num_cards_left = {'landlord': 20, 'landlord_up': 17, 'landlord_down': 17}
+        self._undo_stack = []
+        self._last_candidates = []
+        self._last_meta = {}
+
+        self.my_position = position
         # 保存状态
         self.my_hand_cards = hand_cards
         self.three_cards = three_cards
@@ -436,6 +453,54 @@ class DDZAssistant:
         
         return infoset
     
+    # ---------- 撤销（界面友好性增强，纯状态快照，不改变出牌规则） ----------
+    def _snapshot(self):
+        """返回当前对局状态的可还原快照。"""
+        return {
+            'my_hand_cards': list(self.my_hand_cards),
+            'three_cards': list(self.three_cards),
+            'card_play_action_seq': [list(a) for a in self.card_play_action_seq],
+            'played_cards': {k: list(v) for k, v in self.played_cards.items()},
+            'last_move_dict': {k: list(v) for k, v in self.last_move_dict.items()},
+            'last_move': list(self.last_move),
+            'last_pid': self.last_pid,
+            'bomb_num': self.bomb_num,
+            'acting_player_position': self.acting_player_position,
+            'game_over': self.game_over,
+            'num_cards_left': dict(self.num_cards_left),
+            'seen_cards': Counter(self.seen_cards),
+        }
+
+    def _restore(self, snap):
+        """从快照还原对局状态。"""
+        self.my_hand_cards = list(snap['my_hand_cards'])
+        self.three_cards = list(snap['three_cards'])
+        self.card_play_action_seq = [list(a) for a in snap['card_play_action_seq']]
+        self.played_cards = {k: list(v) for k, v in snap['played_cards'].items()}
+        self.last_move_dict = {k: list(v) for k, v in snap['last_move_dict'].items()}
+        self.last_move = list(snap['last_move'])
+        self.last_pid = snap['last_pid']
+        self.bomb_num = snap['bomb_num']
+        self.acting_player_position = snap['acting_player_position']
+        self.game_over = snap['game_over']
+        self.num_cards_left = dict(snap['num_cards_left'])
+        self.seen_cards = Counter(snap['seen_cards'])
+
+    def can_undo(self):
+        """是否还有可撤销的步骤。"""
+        return len(self._undo_stack) > 0
+
+    def undo(self):
+        """撤销上一步记录/出牌。返回 True 表示撤销成功。"""
+        if not self._undo_stack:
+            print("没有可撤销的步骤。")
+            return False
+        self._restore(self._undo_stack.pop())
+        self._last_candidates = []
+        self._last_meta = {}
+        print("已撤销上一步。")
+        return True
+
     def record_move(self, position, cards_str):
         """
         记录出牌
@@ -463,6 +528,7 @@ class DDZAssistant:
             # 再次确保排序（防御性编程）
             action = sorted(action)
         
+        self._undo_stack.append(self._snapshot())
         # 更新出牌记录
         self.last_move_dict[position] = action.copy()
         self.card_play_action_seq.append(action.copy())
@@ -500,11 +566,26 @@ class DDZAssistant:
         
         return True
     
+    # ---------- 候选出牌（供界面展示，不影响原有推荐逻辑） ----------
+    def get_candidates(self):
+        """返回上一次 recommend_move() 产生的候选列表（结构化）。
+
+        每项: {'display','win_rate','avg_util','fused','n','is_best','score_text'}
+        若尚未推荐过，返回空列表。
+        """
+        return list(getattr(self, '_last_candidates', []) or [])
+
+    def get_recommend_meta(self):
+        """返回上一次推荐的附加信息（搜索模式下的胜率/分差/融合分等）。"""
+        return dict(getattr(self, '_last_meta', {}) or {})
+
     def recommend_move(self):
         """
         推荐当前最佳出牌（使用当前 model_type: WP/ADP）
         返回推荐的牌列表
         """
+        self._last_candidates = []
+        self._last_meta = {}
         if self.acting_player_position != self.my_position:
             print(f"现在不是轮到我出牌,当前出牌方: {self._get_position_name(self.acting_player_position)}")
             return None
@@ -517,6 +598,10 @@ class DDZAssistant:
             action = infoset.legal_actions[0]
             action_display = '不出' if not action else self.cards_to_display(action)
             print(f"\n推荐出牌: {action_display}  [{self.model_type}]")
+            self._last_candidates = [{
+                'display': action_display, 'win_rate': None, 'avg_util': None,
+                'fused': None, 'n': None, 'is_best': True, 'score_text': '唯一合法出牌',
+            }]
             return action
 
         # 仿真搜索模式
@@ -563,6 +648,30 @@ class DDZAssistant:
                         print(f"  {i}. {row['display']}  "
                               f"(胜率={row['win_rate']*100:.1f}%, 分差={row['avg_util']:+.3f}, "
                               f"融合={row.get('fused', 0):.3f}, n={row['n']}){mark}")
+                # 结构化候选，供 Web / 悬浮窗界面展示
+                self._last_meta = {'win_rate': wr, 'avg_util': au, 'fused': fused,
+                                   'objective': self.search_objective, 'mode': 'search'}
+                self._last_candidates = []
+                for i, row in enumerate(cands[:6], 1):
+                    self._last_candidates.append({
+                        'display': row['display'],
+                        'win_rate': row.get('win_rate'),
+                        'avg_util': row.get('avg_util'),
+                        'fused': row.get('fused'),
+                        'n': row.get('n'),
+                        'is_best': i == 1,
+                        'score_text': (
+                            f"胜率 {row['win_rate']*100:.1f}% · 分差 {row['avg_util']:+.3f}"
+                            if row.get('win_rate') is not None and row.get('avg_util') is not None
+                            else ''
+                        ),
+                    })
+                if not self._last_candidates:
+                    self._last_candidates = [{
+                        'display': action_display, 'win_rate': wr, 'avg_util': au,
+                        'fused': fused, 'n': None, 'is_best': True,
+                        'score_text': ' '.join(meta),
+                    }]
                 return best_action
 
         # 使用模型推理
@@ -583,6 +692,15 @@ class DDZAssistant:
         action_display = '不出' if not best_action else self.cards_to_display(best_action)
         print(f"\n推荐出牌: {action_display}  [{self.model_type} {self._format_score(best_score)}]")
 
+        # 结构化候选，供 Web / 悬浮窗界面展示
+        self._last_meta = {'mode': 'model', 'model_type': self.model_type,
+                           'score': best_score, 'score_text': self._format_score(best_score)}
+        self._last_candidates = [{
+            'display': action_display, 'win_rate': best_score if self.model_type == 'WP' else None,
+            'avg_util': best_score if self.model_type == 'ADP' else None, 'fused': None,
+            'n': None, 'is_best': True, 'score_text': self._format_score(best_score),
+        }]
+
         # 显示前3个候选（含分数）
         if len(infoset.legal_actions) > 1:
             print("\n其他候选出牌:")
@@ -592,6 +710,13 @@ class DDZAssistant:
                     alt_action = infoset.legal_actions[idx]
                     alt_display = '不出' if not alt_action else self.cards_to_display(alt_action)
                     print(f"  {i}. {alt_display}  ({self._format_score(float(y_pred[idx]))})")
+                    self._last_candidates.append({
+                        'display': alt_display,
+                        'win_rate': float(y_pred[idx]) if self.model_type == 'WP' else None,
+                        'avg_util': float(y_pred[idx]) if self.model_type == 'ADP' else None,
+                        'fused': None, 'n': None, 'is_best': False,
+                        'score_text': self._format_score(float(y_pred[idx])),
+                    })
 
         return best_action
     
@@ -626,6 +751,7 @@ class DDZAssistant:
             return
         
         # 更新手牌
+        self._undo_stack.append(self._snapshot())
         for card in action:
             self.my_hand_cards.remove(card)
         self.my_hand_cards.sort()
@@ -681,6 +807,9 @@ class DDZAssistant:
         self.my_position = None
         self.num_cards_left = {'landlord': 20, 'landlord_up': 17, 'landlord_down': 17}
         self.seen_cards = Counter()
+        self._undo_stack = []
+        self._last_candidates = []
+        self._last_meta = {}
         print("游戏状态已重置，可以开始新对局。\n")
 
 

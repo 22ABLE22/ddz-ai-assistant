@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  对局检测用的无障碍服务配置。
+
+  只订阅 typeWindowStateChanged（应用/窗口切换），
+  并且 canRetrieveWindowContent="false" —— 只要包名，不读屏幕内容。
+  这是能满足「知道用户打开了哪个应用」的最小权限组合。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:notificationTimeout="200"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/a11y_desc" />

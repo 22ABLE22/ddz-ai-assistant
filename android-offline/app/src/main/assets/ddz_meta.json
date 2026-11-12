@@ -1,0 +1,892 @@
+{
+ "format": "ddz-douzero-v1",
+ "dtype": "float32",
+ "byteorder": "little",
+ "positions": [
+  "landlord",
+  "landlord_up",
+  "landlord_down"
+ ],
+ "objectives": [
+  "WP",
+  "ADP"
+ ],
+ "tensorOrder": [
+  "lstm.weight_ih_l0",
+  "lstm.weight_hh_l0",
+  "lstm.bias_ih_l0",
+  "lstm.bias_hh_l0",
+  "dense1.weight",
+  "dense1.bias",
+  "dense2.weight",
+  "dense2.bias",
+  "dense3.weight",
+  "dense3.bias",
+  "dense4.weight",
+  "dense4.bias",
+  "dense5.weight",
+  "dense5.bias",
+  "dense6.weight",
+  "dense6.bias"
+ ],
+ "models": {
+  "WP/landlord": {
+   "file": "ddz_WP_landlord.bin",
+   "bytes": 5830660,
+   "params": 1457665,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      501
+     ],
+     "offset": 149504,
+     "count": 256512
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 406016,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 406528,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 668672,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 669184,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 931328,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 931840,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1193984,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1194496,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1456640,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1457152,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1457664,
+     "count": 1
+    }
+   ]
+  },
+  "WP/landlord_up": {
+   "file": "ddz_WP_landlord_up.bin",
+   "bytes": 6057988,
+   "params": 1514497,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      612
+     ],
+     "offset": 149504,
+     "count": 313344
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 462848,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 463360,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 725504,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 726016,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 988160,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 988672,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1250816,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1251328,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1513472,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1513984,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1514496,
+     "count": 1
+    }
+   ]
+  },
+  "WP/landlord_down": {
+   "file": "ddz_WP_landlord_down.bin",
+   "bytes": 6057988,
+   "params": 1514497,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      612
+     ],
+     "offset": 149504,
+     "count": 313344
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 462848,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 463360,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 725504,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 726016,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 988160,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 988672,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1250816,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1251328,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1513472,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1513984,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1514496,
+     "count": 1
+    }
+   ]
+  },
+  "ADP/landlord": {
+   "file": "ddz_ADP_landlord.bin",
+   "bytes": 5830660,
+   "params": 1457665,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      501
+     ],
+     "offset": 149504,
+     "count": 256512
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 406016,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 406528,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 668672,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 669184,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 931328,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 931840,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1193984,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1194496,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1456640,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1457152,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1457664,
+     "count": 1
+    }
+   ]
+  },
+  "ADP/landlord_up": {
+   "file": "ddz_ADP_landlord_up.bin",
+   "bytes": 6057988,
+   "params": 1514497,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      612
+     ],
+     "offset": 149504,
+     "count": 313344
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 462848,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 463360,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 725504,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 726016,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 988160,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 988672,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1250816,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1251328,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1513472,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1513984,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1514496,
+     "count": 1
+    }
+   ]
+  },
+  "ADP/landlord_down": {
+   "file": "ddz_ADP_landlord_down.bin",
+   "bytes": 6057988,
+   "params": 1514497,
+   "tensors": [
+    {
+     "name": "lstm.weight_ih_l0",
+     "shape": [
+      512,
+      162
+     ],
+     "offset": 0,
+     "count": 82944
+    },
+    {
+     "name": "lstm.weight_hh_l0",
+     "shape": [
+      512,
+      128
+     ],
+     "offset": 82944,
+     "count": 65536
+    },
+    {
+     "name": "lstm.bias_ih_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148480,
+     "count": 512
+    },
+    {
+     "name": "lstm.bias_hh_l0",
+     "shape": [
+      512
+     ],
+     "offset": 148992,
+     "count": 512
+    },
+    {
+     "name": "dense1.weight",
+     "shape": [
+      512,
+      612
+     ],
+     "offset": 149504,
+     "count": 313344
+    },
+    {
+     "name": "dense1.bias",
+     "shape": [
+      512
+     ],
+     "offset": 462848,
+     "count": 512
+    },
+    {
+     "name": "dense2.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 463360,
+     "count": 262144
+    },
+    {
+     "name": "dense2.bias",
+     "shape": [
+      512
+     ],
+     "offset": 725504,
+     "count": 512
+    },
+    {
+     "name": "dense3.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 726016,
+     "count": 262144
+    },
+    {
+     "name": "dense3.bias",
+     "shape": [
+      512
+     ],
+     "offset": 988160,
+     "count": 512
+    },
+    {
+     "name": "dense4.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 988672,
+     "count": 262144
+    },
+    {
+     "name": "dense4.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1250816,
+     "count": 512
+    },
+    {
+     "name": "dense5.weight",
+     "shape": [
+      512,
+      512
+     ],
+     "offset": 1251328,
+     "count": 262144
+    },
+    {
+     "name": "dense5.bias",
+     "shape": [
+      512
+     ],
+     "offset": 1513472,
+     "count": 512
+    },
+    {
+     "name": "dense6.weight",
+     "shape": [
+      1,
+      512
+     ],
+     "offset": 1513984,
+     "count": 512
+    },
+    {
+     "name": "dense6.bias",
+     "shape": [
+      1
+     ],
+     "offset": 1514496,
+     "count": 1
+    }
+   ]
+  }
+ }
+}

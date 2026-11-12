@@ -1,0 +1,19 @@
+# 统一换行：仓库内文本一律 LF，避免 Windows 检出后整文件 diff
+* text=auto eol=lf
+
+# Windows 脚本保持 CRLF，cmd.exe 对 LF 结尾的 bat 兼容性差
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制：禁止换行转换与 diff
+*.bin binary
+*.ckpt binary
+*.apk binary
+*.jar binary
+*.png binary
+*.jpg binary
+*.ttf binary
+
+# 生成物 / 大文件不做 diff 展示
+tools/golden/*.json -diff

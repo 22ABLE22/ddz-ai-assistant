@@ -1,0 +1,19 @@
+import com.example.ddzoffline.CardEngine;
+public class CardEngineSmoke {
+  public static void main(String[] args) {
+    CardEngine e = new CardEngine();
+    e.start(CardEngine.LANDLORD, "3456789JQKA234567", "XDA");
+    if (!e.getTurn().equals(CardEngine.LANDLORD)) throw new AssertionError(e.status());
+    String lead = e.recommend();
+    if (!lead.equals("推荐") && lead.isEmpty()) throw new AssertionError("empty recommendation");
+    e.record(CardEngine.LANDLORD, "3");
+    e.record(CardEngine.DOWN, "4");
+    e.record(CardEngine.UP, "5");
+    if (!e.getTurn().equals(CardEngine.LANDLORD)) throw new AssertionError(e.status());
+    if (e.handCount() != 19) throw new AssertionError("hand count=" + e.handCount());
+    boolean rejected = false;
+    try { e.record(CardEngine.LANDLORD, "10"); } catch (IllegalArgumentException ex) { rejected = true; }
+    if (!rejected) throw new AssertionError("illegal card was accepted");
+    System.out.println("CardEngine smoke: OK; next=" + e.status() + "; hand=" + e.handCount());
+  }
+}

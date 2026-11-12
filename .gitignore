@@ -11,7 +11,30 @@ venv/
 .DS_Store
 Thumbs.db
 
+# 本地备份 / 临时文件
+*.bak
+*.orig
+*.tmp
+
 # 第三方引擎与预训练权重：请按 README 自行下载，不纳入本仓库
 DouZero/
 douzero-baselines/
 rlcard/
+
+# Android / Gradle 构建产物
+android-offline/.gradle/
+android-offline/build/
+android-offline/app/build/
+android-offline/local.properties
+android-offline/captures/
+*.apk
+*.ap_
+*.dex
+*.class
+jvmtest-out/
+
+# 黄金测试向量由 tools/export_android.py 生成，体积大且可复现
+tools/golden/*.json
+
+# 截图识别的抓图缓存（含桌面截图，可能带隐私内容）
+.ddz_cache/
